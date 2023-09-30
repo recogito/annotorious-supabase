@@ -1,2 +1,3 @@
-# annotorious-supabase
-A Supabase storage plugin for Annotorious and the Recogito Text Annotator
+# @recogito/annotorious-supabase.
+
+Annotorious storage plugin for Recogito's Supabase backend.
