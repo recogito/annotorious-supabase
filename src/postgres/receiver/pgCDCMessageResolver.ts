@@ -1,4 +1,4 @@
-import { Annotation, getCollaborators, PresentUser } from '@annotorious/core';
+import { Annotation, getContributors, PresentUser } from '@annotorious/core';
 import type { SupabaseAnnotationBody, SupabaseAnnotationTarget } from '../../SupabaseAnnotation';
 import type { BodyChangeEvent, TargetChangeEvent } from '../Types';
 
@@ -8,7 +8,7 @@ const findUser = (id: string, presentUsers: PresentUser[], annotation?: Annotati
 
   // Check if this user is already in this annotation
   if (annotation) {
-    const collaborator = getCollaborators(annotation).find(u => u.id === id);
+    const collaborator = getContributors(annotation).find(u => u.id === id);
     if (collaborator)
       return collaborator;
   }
