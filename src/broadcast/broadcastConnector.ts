@@ -5,7 +5,11 @@ import type { PresenceConnector } from '../presence';
 import { affectedAnnotations, apply, marshal } from './broadcastProtocol';
 import type { BroadcastMessage } from './Types';
 
-export const BroadcastConnector = (anno: Annotator<Annotation, Annotation>, presence: ReturnType<typeof PresenceConnector>) => {
+export const BroadcastConnector = (
+  anno: Annotator<Annotation, Annotation>, 
+  defaultLayerId: string,
+  presence: ReturnType<typeof PresenceConnector>
+) => {
 
   let privacyMode = false;
 
@@ -16,7 +20,7 @@ export const BroadcastConnector = (anno: Annotator<Annotation, Annotation>, pres
   const onStoreChange = (channel: RealtimeChannel) => ((event: StoreChangeEvent<Annotation>) =>  {
     const message: BroadcastMessage = {
       from: { presenceKey: PRESENCE_KEY, ...anno.getUser() },
-      events: marshal([ event ], store, privacyMode)
+      events: marshal([ event ], store, defaultLayerId, privacyMode)
     };
 
     // Not all store changes trigger broadcast events - make

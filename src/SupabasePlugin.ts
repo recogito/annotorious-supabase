@@ -32,7 +32,7 @@ export const SupabasePlugin = (anno: Annotator<SupabaseAnnotation, SupabaseAnnot
   
   const presence = PresenceConnector(anno, config.appearanceProvider, emitter);
 
-  const broadcast = BroadcastConnector(anno, presence);
+  const broadcast = BroadcastConnector(anno, defaultLayerId, presence);
   
   const postgres = PostgresConnector(anno, defaultLayerId, config.layerIds, supabase, presence, emitter);
 

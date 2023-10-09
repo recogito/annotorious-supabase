@@ -30,6 +30,7 @@ export const affectedAnnotations = (events: BroadcastEvent[]) => {
 export const marshal = (
   storeEvents: StoreChangeEvent<SupabaseAnnotation>[], 
   store: Store<Annotation>,
+  defaultLayerId: string,
   privacyMode: boolean
 ): BroadcastEvent[] =>
   storeEvents.reduce((all, storeEvent) => {
@@ -46,17 +47,18 @@ export const marshal = (
     const updated = (changes.updated || [])
       .filter(({ newValue }) => newValue.visibility !== Visibility.PRIVATE);
 
-    const createAnnotationEvents: BroadcastEvent[] = created.map(annotation => ({
-      type: BroadcastEventType.CREATE_ANNOTATION, 
-      annotation: {
-        ...annotation,
-        // Set target version to 1
-        target: {
-          ...annotation.target,
-          version: 1
+    const createAnnotationEvents: BroadcastEvent[] =
+      created.map(annotation => ({
+        type: BroadcastEventType.CREATE_ANNOTATION, 
+        annotation: {
+          ...annotation,
+          target: {
+            ...annotation.target,
+            version: 1
+          },
+          layer_id: defaultLayerId
         }
-      }
-    }));
+      }));
 
     const makeAnnotationPublicEvents: BroadcastEvent[] = updated
       // Keep only updates that have neither body nor 
@@ -96,9 +98,8 @@ export const marshal = (
     const createdTargets = 
       createAnnotationEvents.map(evt => (evt as CreateAnnotationEvent).annotation.target);
 
-    if (createdTargets.length > 0) {
+    if (createdTargets.length > 0)
       store.bulkUpdateTargets(createdTargets, Origin.REMOTE);
-    }
 
     return [
       ...all,
