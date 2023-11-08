@@ -78,7 +78,10 @@ export const createReceiver = (
    * 2. if it doesn't: create annotation with target.
    */
   const onInsertTarget = (event: TargetChangeEvent) => {
-    const { annotation_id } = event.new;
+    const { annotation_id, value } = event.new;
+
+    if (!value) 
+      return; // Discard annotations without a target selector
 
     const annotation = store.getAnnotation(annotation_id);
 

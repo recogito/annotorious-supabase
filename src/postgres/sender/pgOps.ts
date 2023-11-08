@@ -41,7 +41,7 @@ export const pgOps = (anno: Annotator<Annotation, Annotation>, supabase: Supabas
         id,
         layer_id,
         is_private,
-        targets ( 
+        targets!inner ( 
           annotation_id,
           created_at,
           created_by:profiles!targets_created_by_fkey(
@@ -79,7 +79,7 @@ export const pgOps = (anno: Annotator<Annotation, Annotation>, supabase: Supabas
           value
         )
       `)
-      .not('targets', 'is', null)
+      .not('targets.value', 'is', null)
 
     return Array.isArray(layerIds) ?
       query.in('layer_id', layerIds) :
