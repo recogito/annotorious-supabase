@@ -190,8 +190,6 @@ export const pgOps = (anno: Annotator<Annotation, Annotation>, supabase: Supabas
       version: b.version ? b.version + 1 : 1
     }));
 
-    console.log('bodies', bodies, versioned);
-
     store.bulkUpdateBodies(versioned, Origin.REMOTE);
 
     return supabase
