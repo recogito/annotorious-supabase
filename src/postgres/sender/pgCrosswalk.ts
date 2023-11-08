@@ -16,6 +16,7 @@ export const parseProfileRecord = (p: ProfileRecord | undefined): User => p ? ({
 export const parseBodyRecord = (body: BodyRecord): SupabaseAnnotationBody => ({
   id: body.id,
   annotation: body.annotation_id,
+  format: body.format,
   purpose: body.purpose,
   value: body.value,
   creator: parseProfileRecord(body.created_by),

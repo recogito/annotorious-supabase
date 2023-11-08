@@ -74,6 +74,7 @@ export const pgOps = (anno: Annotator<Annotation, Annotation>, supabase: Supabas
             avatar_url
           ),
           version,
+          format,
           purpose,
           value
         )
@@ -199,6 +200,7 @@ export const pgOps = (anno: Annotator<Annotation, Annotation>, supabase: Supabas
         updated_at: b.created,
         updated_by: anno.getUser().id,
         annotation_id: b.annotation,
+        format: b.format,
         purpose: b.purpose,
         value: b.value,
         layer_id

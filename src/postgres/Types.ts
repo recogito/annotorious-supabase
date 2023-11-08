@@ -39,6 +39,8 @@ export interface BodyRecord {
 
   created_by: ProfileRecord;
 
+  format?: string;
+
   purpose?: string;
 
   updated_at?: string;
@@ -142,6 +144,8 @@ export type BodyChangeEvent = {
     created_at: string;
   
     created_by: string;
+
+    format?: string;
   
     purpose?: string;
   

@@ -23,6 +23,7 @@ export const resolveBodyChange = (event: BodyChangeEvent, presentUsers: PresentU
   return {
     id: b.id,
     annotation: b.annotation_id,
+    format: b.format,
     purpose: b.purpose,
     value: b.value,
     creator: findUser(b.created_by, presentUsers, annotation),

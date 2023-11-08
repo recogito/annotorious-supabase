@@ -20,6 +20,8 @@ export interface SupabaseAnnotationTarget extends AnnotationTarget {
 
 export interface SupabaseAnnotationBody extends AnnotationBody {
 
+  format?: string;
+
   version?: number;
 
 }
