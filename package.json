@@ -1,6 +1,6 @@
 {
   "name": "@recogito/annotorious-supabase",
-  "version": "3.0.0-pre-alpha-52",
+  "version": "3.0.0-rc.1",
   "description": "Annotorious storage plugin for Recogito's Supabase backend",
   "type": "module",
   "main": "dist/annotorious-supabase.js",
@@ -20,7 +20,7 @@
     "vite-plugin-dts": "^2.2.0"
   },
   "dependencies": {
-    "@annotorious/core": "^3.0.0-pre-alpha-58",
+    "@annotorious/core": "^3.0.0-rc.1",
     "@supabase/supabase-js": "^2.20.0",
     "nanoevents": "^7.0.1"
   }
