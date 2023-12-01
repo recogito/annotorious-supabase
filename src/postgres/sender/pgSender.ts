@@ -33,7 +33,7 @@ export const createSender = (
     });
 
   const onDeleteAnnotation = (a: Annotation) => ops.archiveAnnotation(a)
-    .then(({ error }) => {
+    .catch(error => {
       if (error)
         emitter.emit('saveError', error);
     });

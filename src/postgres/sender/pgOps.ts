@@ -134,7 +134,7 @@ export const pgOps = (anno: Annotator<Annotation, Annotation>, supabase: Supabas
    * can set the 'keepalive' flag, and make sure the request gets
    * executed, even if the user closes the browser tab.
    */
-  const archiveAnnotation = (a: Annotation) => {
+  const archiveAnnotation = (a: Annotation) =>
     supabase.auth.getSession().then(({ data }) => {
       const { access_token } = data.session;
 
@@ -148,7 +148,7 @@ export const pgOps = (anno: Annotator<Annotation, Annotation>, supabase: Supabas
         _id: a.id
       };
 
-      fetch(url, {
+      return fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -159,7 +159,6 @@ export const pgOps = (anno: Annotator<Annotation, Annotation>, supabase: Supabas
         keepalive: true // important!
       });
     })
-  }
 
   const archiveBodies = (bodies: AnnotationBody[]): Promise<void> => {
 
