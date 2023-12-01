@@ -139,7 +139,7 @@ export const pgOps = (anno: Annotator<Annotation, Annotation>, supabase: Supabas
       const { access_token } = data.session;
 
       // @ts-ignore
-      const { supabaseUrl, supabaseKey } = supabase.auth;
+      const { supabaseUrl, supabaseKey } = supabase;
 
       const url = `${supabaseUrl}/rest/v1/rpc/archive_record_rpc`;
 
