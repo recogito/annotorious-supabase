@@ -122,12 +122,44 @@ export const pgOps = (anno: Annotator<Annotation, Annotation>, supabase: Supabas
       layer_id
     });
 
-  const archiveAnnotation = (a: Annotation) =>
-    supabase
-      .rpc('archive_record_rpc', {
+  // const archiveAnnotation = (a: Annotation) =>
+  //   supabase
+  //     .rpc('archive_record_rpc', {
+  //       _table_name: 'annotations',
+  //       _id: a.id
+  //     })
+  
+  /** 
+   * We're calling the 'archive_record_rpc' manually here, so we
+   * can set the 'keepalive' flag, and make sure the request gets
+   * executed, even if the user closes the browser tab.
+   */
+  const archiveAnnotation = (a: Annotation) => {
+    supabase.auth.getSession().then(({ data }) => {
+      const { access_token } = data.session;
+
+      // @ts-ignore
+      const { supabaseUrl, supabaseKey } = supabase.auth;
+
+      const url = `${supabaseUrl}/rest/v1/rpc/archive_record_rpc`;
+
+      const payload = {
         _table_name: 'annotations',
         _id: a.id
-      })
+      };
+
+      fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Apikey': supabaseKey,
+          'Authorization': `Bearer ${access_token}`
+        },
+        body: JSON.stringify(payload),
+        keepalive: true // important!
+      });
+    })
+  }
 
   const archiveBodies = (bodies: AnnotationBody[]): Promise<void> => {
 
