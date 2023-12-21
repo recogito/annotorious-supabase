@@ -59,7 +59,7 @@ export const createSender = (
       });
     }
 
-    if ((bodiesCreated.length + bodiesUpdated.length) > 0) {
+    if ((bodiesCreated?.length || 0) + (bodiesUpdated?.length || 0) > 0) {
       ops.upsertBodies([
         ...bodiesCreated, 
         ...bodiesUpdated.map(u => u.newBody) 
@@ -70,7 +70,7 @@ export const createSender = (
       });
     }
 
-    if (bodiesDeleted.length > 0) {
+    if (bodiesDeleted?.length > 0) {
       ops.archiveBodies(bodiesDeleted)
         .catch(error => {
           emitter.emit('saveError', error);
