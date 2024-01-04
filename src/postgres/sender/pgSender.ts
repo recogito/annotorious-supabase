@@ -61,8 +61,8 @@ export const createSender = (
 
     if ((bodiesCreated?.length || 0) + (bodiesUpdated?.length || 0) > 0) {
       ops.upsertBodies([
-        ...bodiesCreated, 
-        ...bodiesUpdated.map(u => u.newBody) 
+        ...(bodiesCreated || []), 
+        ...(bodiesUpdated || []).map(u => u.newBody) 
       // @ts-ignore
       ], a.layer_id).then(({ error }) => {
         if (error)
