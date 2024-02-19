@@ -26,9 +26,21 @@ export const parseBodyRecord = (body: BodyRecord): SupabaseAnnotationBody => ({
   version: body.version
 });
 
+const patchLegacyTextSelector = (selector: any): any => {
+  if (Array.isArray(selector))
+    return selector; // All is well
+
+  if (selector.quote)
+    // Text selector that's NOT an array!
+    return [selector];
+
+  // Nothing to patch
+  return selector;
+}
+
 export const parseTargetRecord = (target: TargetRecord): SupabaseAnnotationTarget => ({
   annotation: target.annotation_id,
-  selector: JSON.parse(target.value),
+  selector: patchLegacyTextSelector(JSON.parse(target.value)),
   creator: parseProfileRecord(target.created_by),
   created: new Date(target.created_at),
   updatedBy: parseProfileRecord(target.created_by),
