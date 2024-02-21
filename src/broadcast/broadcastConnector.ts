@@ -1,9 +1,15 @@
-import { Origin } from '@annotorious/core';
+import { ChangeSet, Origin, mergeChanges } from '@annotorious/core';
 import { Annotation, Annotator, PRESENCE_KEY, StoreChangeEvent } from '@annotorious/core';
 import type { RealtimeChannel } from '@supabase/realtime-js';
 import type { PresenceConnector } from '../presence';
 import { affectedAnnotations, apply, marshal } from './broadcastProtocol';
 import type { BroadcastMessage } from './Types';
+import type { SupabaseAnnotation } from 'src/SupabaseAnnotation';
+
+// Duration during which fast successive store changes get merged 
+// with the last change, rather than triggering a broadcast message
+// immedidately.
+const DEBOUNCE = 100;
 
 export const BroadcastConnector = (
   anno: Annotator<Annotation, Annotation>, 
@@ -13,24 +19,52 @@ export const BroadcastConnector = (
 
   let privacyMode = false;
 
-  let observer: (event: StoreChangeEvent<Annotation>) => void  = null;
-
   const { store } = anno.state;
 
-  const onStoreChange = (channel: RealtimeChannel) => ((event: StoreChangeEvent<Annotation>) =>  {
-    const message: BroadcastMessage = {
-      from: { presenceKey: PRESENCE_KEY, ...anno.getUser() },
-      events: marshal([ event ], store, defaultLayerId, privacyMode)
-    };
+  let observer: (event: StoreChangeEvent<Annotation>) => void  = null;
 
-    // Not all store changes trigger broadcast events - make
-    // sure we only send a message when there are >0 events!
-    if (message.events.length > 0) {      
-      channel.send({
-        type: 'broadcast',
-        event: 'change',
-        payload: message
-      });
+  let bufferedChanges: ChangeSet<SupabaseAnnotation>;
+
+  let timeoutId: ReturnType<typeof setTimeout>;
+
+  let lastMessageAt = 0;
+
+  const onStoreChange = (channel: RealtimeChannel) => ((event: StoreChangeEvent<Annotation>) =>  {
+    const send = (changes: ChangeSet<Annotation>) => {
+      const message: BroadcastMessage = {
+        from: { presenceKey: PRESENCE_KEY, ...anno.getUser() },
+        events: marshal(changes, store, defaultLayerId, privacyMode)
+      };
+
+      // Not all store changes trigger broadcast events - make
+      // sure we only send a message when there are >0 events!
+      if (message.events.length > 0) {      
+        channel.send({
+          type: 'broadcast',
+          event: 'change',
+          payload: message
+        });
+      }
+
+      bufferedChanges = undefined;
+      lastMessageAt = now;
+    }
+
+    const now = performance.now();
+
+    const timeSinceLastMessage = now - lastMessageAt;
+
+    // Merge changes with the current buffer
+    bufferedChanges = bufferedChanges ? mergeChanges(bufferedChanges, event.changes) : event.changes;
+
+    if (timeSinceLastMessage >= DEBOUNCE) {
+      send({...bufferedChanges});
+    } else {
+      clearTimeout(timeoutId);
+      
+      timeoutId = setTimeout(() => {
+        send({...bufferedChanges});
+      }, DEBOUNCE - timeSinceLastMessage);
     }
   });
 

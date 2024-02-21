@@ -1,5 +1,5 @@
 import { Origin } from '@annotorious/core';
-import type { Annotation, Store, StoreChangeEvent } from '@annotorious/core';
+import type { Annotation, ChangeSet, Store, StoreChangeEvent } from '@annotorious/core';
 import { BroadcastEventType } from './Types';
 import type { BroadcastEvent, CreateAnnotationEvent } from './Types';
 import { SupabaseAnnotation, Visibility } from '../SupabaseAnnotation';
@@ -28,88 +28,84 @@ export const affectedAnnotations = (events: BroadcastEvent[]) => {
 }
 
 export const marshal = (
-  storeEvents: StoreChangeEvent<SupabaseAnnotation>[], 
+  changes: ChangeSet<SupabaseAnnotation>, 
   store: Store<Annotation>,
   defaultLayerId: string,
   privacyMode: boolean
-): BroadcastEvent[] =>
-  storeEvents.reduce((all, storeEvent) => {
-    const { changes } = storeEvent;
+): BroadcastEvent[] => {
+  // Don't broadcast create events while in private mode
+  const created = privacyMode ? [] : changes.created || [];
 
-    // Don't broadcast create events while in private mode
-    const created = privacyMode ? [] : changes.created || [];
+  // Don't broadcast delete events for private annotations
+  const deleted = (changes.deleted || [])
+    .filter(a => a.visibility !== Visibility.PRIVATE);
 
-    // Don't broadcast delete events for private annotations
-    const deleted = (changes.deleted || [])
-      .filter(a => a.visibility !== Visibility.PRIVATE);
+  // Don't broadcast updates for private annotations
+  const updated = (changes.updated || [])
+    .filter(({ newValue }) => newValue.visibility !== Visibility.PRIVATE);
 
-    // Don't broadcast updates for private annotations
-    const updated = (changes.updated || [])
-      .filter(({ newValue }) => newValue.visibility !== Visibility.PRIVATE);
+  const createAnnotationEvents: BroadcastEvent[] =
+    created.map(annotation => ({
+      type: BroadcastEventType.CREATE_ANNOTATION, 
+      annotation: {
+        ...annotation,
+        target: {
+          ...annotation.target,
+          version: 1
+        },
+        layer_id: defaultLayerId
+      }
+    }));
 
-    const createAnnotationEvents: BroadcastEvent[] =
-      created.map(annotation => ({
-        type: BroadcastEventType.CREATE_ANNOTATION, 
-        annotation: {
-          ...annotation,
-          target: {
-            ...annotation.target,
-            version: 1
-          },
-          layer_id: defaultLayerId
-        }
-      }));
-
-    const makeAnnotationPublicEvents: BroadcastEvent[] = updated
-      // Keep only updates that have neither body nor 
-      .filter(update => 
-        update.oldValue.visibility === Visibility.PRIVATE &&
-        !update.newValue.visibility)
-      .reduce((all, update) => ([
-        ...all,
-        {
-          type: BroadcastEventType.CREATE_ANNOTATION,
-          annotation: update.newValue
-        }
-      ]), [] as BroadcastEvent[]);
-
-    const deleteAnnotationEvents: BroadcastEvent[] = deleted.map(annotation =>
-      ({ type: BroadcastEventType.DELETE_ANNOTATION, id: annotation.id }));
-
-    const deleteBodyEvents: BroadcastEvent[] = updated
-      .filter(update => update.bodiesDeleted?.length > 0)
-      .reduce((all, update) => ([
-        ...all, 
-        ...update.bodiesDeleted.map(body => ({ 
-          type: BroadcastEventType.DELETE_BODY, 
-          id: body.id, 
-          annotation: body.annotation 
-        }))]
-      ), []);
-
-    const updateTargetEvents: BroadcastEvent[] = updated
-      .filter(update => update.targetUpdated)
-      .reduce((all, update) => ([
-        ...all,
-        { type: BroadcastEventType.UPDATE_TARGET, target: update.targetUpdated.newTarget }
-      ]), []);
-
-    // Apply version updates to the store
-    const createdTargets = 
-      createAnnotationEvents.map(evt => (evt as CreateAnnotationEvent).annotation.target);
-
-    if (createdTargets.length > 0)
-      store.bulkUpdateTargets(createdTargets, Origin.REMOTE);
-
-    return [
+  const makeAnnotationPublicEvents: BroadcastEvent[] = updated
+    // Keep only updates that have neither body nor 
+    .filter(update => 
+      update.oldValue.visibility === Visibility.PRIVATE &&
+      !update.newValue.visibility)
+    .reduce((all, update) => ([
       ...all,
-      ...createAnnotationEvents,
-      ...makeAnnotationPublicEvents,
-      ...deleteAnnotationEvents,
-      ...deleteBodyEvents,
-      ...updateTargetEvents
-    ];
-  }, []);
+      {
+        type: BroadcastEventType.CREATE_ANNOTATION,
+        annotation: update.newValue
+      }
+    ]), [] as BroadcastEvent[]);
+
+  const deleteAnnotationEvents: BroadcastEvent[] = deleted.map(annotation =>
+    ({ type: BroadcastEventType.DELETE_ANNOTATION, id: annotation.id }));
+
+  const deleteBodyEvents: BroadcastEvent[] = updated
+    .filter(update => update.bodiesDeleted?.length > 0)
+    .reduce((all, update) => ([
+      ...all, 
+      ...update.bodiesDeleted.map(body => ({ 
+        type: BroadcastEventType.DELETE_BODY, 
+        id: body.id, 
+        annotation: body.annotation 
+      }))]
+    ), []);
+
+  const updateTargetEvents: BroadcastEvent[] = updated
+    .filter(update => update.targetUpdated)
+    .reduce((all, update) => ([
+      ...all,
+      { type: BroadcastEventType.UPDATE_TARGET, target: update.targetUpdated.newTarget }
+    ]), []);
+
+  // Apply version updates to the store
+  const createdTargets = 
+    createAnnotationEvents.map(evt => (evt as CreateAnnotationEvent).annotation.target);
+
+  if (createdTargets.length > 0)
+    store.bulkUpdateTargets(createdTargets, Origin.REMOTE);
+
+  return [
+    ...createAnnotationEvents,
+    ...makeAnnotationPublicEvents,
+    ...deleteAnnotationEvents,
+    ...deleteBodyEvents,
+    ...updateTargetEvents
+  ];
+}
 
 const reviveDateFields = (obj: any, keyOrKeys: string | string[]) => {
   const keys = Array.isArray(keyOrKeys) ? keyOrKeys : [ keyOrKeys ];
