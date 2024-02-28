@@ -12,7 +12,8 @@ export const createReceiver = (
   layerIds: string | string[], 
   channel: RealtimeChannel, 
   presence: ReturnType<typeof PresenceConnector>, 
-  emitter: Emitter<SupabasePluginEvents>
+  emitter: Emitter<SupabasePluginEvents>,
+  source?: string
 ) => {
 
   const { store } = anno.state;
@@ -84,14 +85,18 @@ export const createReceiver = (
       return; // Discard annotations without a target selector
 
     const annotation = store.getAnnotation(annotation_id);
-
     if (!annotation) {
-      store.addAnnotation({
-        id: annotation_id,
-        bodies: [],
-        target: resolveTargetChange(event, presence.getPresentUsers()),
-        layer_id: event.new.layer_id
-      }, Origin.REMOTE);
+      const target = resolveTargetChange(event, presence.getPresentUsers());
+
+      const shouldInsert = !source || target.selector['source'] === source;
+
+      if (shouldInsert)
+        store.addAnnotation({
+          id: annotation_id,
+          bodies: [],
+          target: resolveTargetChange(event, presence.getPresentUsers()),
+          layer_id: event.new.layer_id
+        }, Origin.REMOTE);
     }
   }
 
@@ -106,14 +111,13 @@ export const createReceiver = (
     const { annotation_id, version } = event.new;
 
     const annotation = store.getAnnotation(annotation_id);
-    
     if (annotation) {
       if (annotation.target.version < version) {
         console.log('[PGCDC] Overriding target');
         store.updateTarget(resolveTargetChange(event, presence.getPresentUsers(), annotation), Origin.REMOTE);
       }
     } else {
-      emitter.emit('integrityError', 'Attempt to update target on missing annotation: ' + annotation_id);
+      // emitter.emit('integrityError', 'Attempt to update target on missing annotation: ' + annotation_id);
     }
   }
 

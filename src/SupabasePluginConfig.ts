@@ -2,18 +2,20 @@ import type { AppearanceProvider } from '@annotorious/core';
 
 export type SupabasePluginConfig = {
 
+  appearanceProvider?: AppearanceProvider
+
   apiKey: string,
-  
-  supabaseUrl: string,
 
   channel: string,
 
   defaultLayer?: string,
 
-  layerIds: string | string[],
-
   eventsPerSecond?: number,
 
-  appearanceProvider?: AppearanceProvider
+  layerIds: string | string[],
+  
+  source?: string;
+
+  supabaseUrl: string,
   
 }

@@ -9,7 +9,11 @@ import {
   Visibility 
 } from '../../SupabaseAnnotation';
 
-export const pgOps = (anno: Annotator<Annotation, Annotation>, supabase: SupabaseClient) => {
+export const pgOps = (
+  anno: Annotator<Annotation, Annotation>, 
+  supabase: SupabaseClient,
+  source?: string
+) => {
 
   const { store } = anno.state;
 
@@ -97,6 +101,9 @@ export const pgOps = (anno: Annotator<Annotation, Annotation>, supabase: Supabas
       layer_id
     };
 
+    if (source)
+      versioned.target.selector['source'] = source;
+
     store.updateAnnotation(versioned, Origin.REMOTE);
     
     return supabase
@@ -110,24 +117,24 @@ export const pgOps = (anno: Annotator<Annotation, Annotation>, supabase: Supabas
       });
   }
 
-  const createTarget = (t: AnnotationTarget, layer_id: string) => supabase
-    .from('targets')
-    .insert({
-      created_at: t.created,
-      created_by: anno.getUser().id,
-      updated_at: t.created,
-      updated_by: anno.getUser().id,
-      annotation_id: t.annotation,
-      value: JSON.stringify(t.selector),
-      layer_id
-    });
+  const createTarget = (t: AnnotationTarget, layer_id: string) => {
+    const selector = source ? {
+      ...t.selector,
+      source
+    } : t.selector;
 
-  // const archiveAnnotation = (a: Annotation) =>
-  //   supabase
-  //     .rpc('archive_record_rpc', {
-  //       _table_name: 'annotations',
-  //       _id: a.id
-  //     })
+    return supabase
+      .from('targets')
+      .insert({
+        created_at: t.created,
+        created_by: anno.getUser().id,
+        updated_at: t.created,
+        updated_by: anno.getUser().id,
+        annotation_id: t.annotation,
+        value: JSON.stringify(selector),
+        layer_id
+      });
+  }
   
   /** 
    * We're calling the 'archive_record_rpc' manually here, so we
@@ -198,6 +205,9 @@ export const pgOps = (anno: Annotator<Annotation, Annotation>, supabase: Supabas
         ...t,
         version: t.version ? t.version + 1 : 1
       };
+
+      if (source)
+        versioned.selector['source'] = source;
 
       store.updateTarget(versioned, Origin.REMOTE);
 

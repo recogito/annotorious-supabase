@@ -31,7 +31,8 @@ export const marshal = (
   changes: ChangeSet<SupabaseAnnotation>, 
   store: Store<Annotation>,
   defaultLayerId: string,
-  privacyMode: boolean
+  privacyMode: boolean,
+  source?: string
 ): BroadcastEvent[] => {
   // Don't broadcast create events while in private mode
   const created = privacyMode ? [] : changes.created || [];
@@ -45,17 +46,24 @@ export const marshal = (
     .filter(({ newValue }) => newValue.visibility !== Visibility.PRIVATE);
 
   const createAnnotationEvents: BroadcastEvent[] =
-    created.map(annotation => ({
-      type: BroadcastEventType.CREATE_ANNOTATION, 
-      annotation: {
-        ...annotation,
-        target: {
-          ...annotation.target,
-          version: 1
-        },
-        layer_id: defaultLayerId
-      }
-    }));
+    created.map(annotation => {
+      const event: BroadcastEvent = {
+        type: BroadcastEventType.CREATE_ANNOTATION, 
+        annotation: {
+          ...annotation,
+          target: {
+            ...annotation.target,
+            version: 1
+          },
+          layer_id: defaultLayerId
+        }
+      };
+
+      if (source)
+        event.annotation.target.selector['source'] = source;
+
+      return event;
+    });
 
   const makeAnnotationPublicEvents: BroadcastEvent[] = updated
     // Keep only updates that have neither body nor 
@@ -143,11 +151,13 @@ const reviveDates = (event: BroadcastEvent) => {
   }
 }
   
-export const apply = (store: Store<Annotation>, event: BroadcastEvent) => {
+export const apply = (store: Store<Annotation>, event: BroadcastEvent, source?: string) => {
   const e = reviveDates(event);
 
   if (e.type === BroadcastEventType.CREATE_ANNOTATION) {
-    store.addAnnotation(e.annotation, Origin.REMOTE);
+    const shouldAdd = !source || e.annotation.target.selector.source === source;
+    if (shouldAdd)
+      store.addAnnotation(e.annotation, Origin.REMOTE);
   } else if (e.type === BroadcastEventType.DELETE_ANNOTATION) {
     store.deleteAnnotation(e.id, Origin.REMOTE);
   } else if (e.type === BroadcastEventType.CREATE_BODY) {

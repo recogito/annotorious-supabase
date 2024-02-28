@@ -12,12 +12,13 @@ export const createSender = (
   defaultLayerId: string,
   layerIds: string | string[], 
   supabase: SupabaseClient, 
-  emitter: Emitter<SupabasePluginEvents>
+  emitter: Emitter<SupabasePluginEvents>,
+  source?: string
 ) => {
 
   let privacyMode = false;
 
-  const ops = pgOps(anno, supabase);
+  const ops = pgOps(anno, supabase, source);
 
   const onCreateAnnotation = (a: SupabaseAnnotation) => ops.createAnnotation(a, defaultLayerId, privacyMode)
     .then(({ error }) => {
@@ -94,8 +95,12 @@ export const createSender = (
       emitter.emit('initialLoadError', error);
     } else {
       const annotations = (data as unknown as AnnotationRecord[]).map(parseAnnotationRecord);
+
+      const filteredBySource = source
+        ? annotations.filter(a => 'source' in a.target.selector && a.target.selector.source === source)
+        : annotations;
       
-      anno.state.store.bulkAddAnnotation(annotations, true, Origin.REMOTE);
+      anno.state.store.bulkAddAnnotation(filteredBySource, true, Origin.REMOTE);
 
       emitter.emit('initialLoad', annotations);
     }

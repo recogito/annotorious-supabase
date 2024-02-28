@@ -1,4 +1,5 @@
-import type { Annotation, AnnotationBody, AnnotationTarget, User } from '@annotorious/core';
+import type { AnnotationBody, AnnotationTarget, User } from '@annotorious/core';
+import type { SupabaseAnnotation } from '../SupabaseAnnotation';
 
 export interface BroadcastMessage {
 
@@ -36,7 +37,7 @@ export type CreateAnnotationEvent = {
 
   type: BroadcastEventType.CREATE_ANNOTATION;
 
-  annotation: Annotation;
+  annotation: SupabaseAnnotation;
 
 }
 

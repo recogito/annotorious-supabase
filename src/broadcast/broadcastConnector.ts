@@ -14,7 +14,8 @@ const DEBOUNCE = 100;
 export const BroadcastConnector = (
   anno: Annotator<Annotation, Annotation>, 
   defaultLayerId: string,
-  presence: ReturnType<typeof PresenceConnector>
+  presence: ReturnType<typeof PresenceConnector>,
+  source?: string
 ) => {
 
   let privacyMode = false;
@@ -33,7 +34,7 @@ export const BroadcastConnector = (
     const send = (changes: ChangeSet<Annotation>) => {
       const message: BroadcastMessage = {
         from: { presenceKey: PRESENCE_KEY, ...anno.getUser() },
-        events: marshal(changes, store, defaultLayerId, privacyMode)
+        events: marshal(changes, store, defaultLayerId, privacyMode, source)
       };
 
       // Not all store changes trigger broadcast events - make
@@ -84,7 +85,7 @@ export const BroadcastConnector = (
       console.log('[Broadcast Rx]', events);
 
       // Apply the change event to the store
-      events.forEach(event => apply(store, event));
+      events.forEach(event => apply(store, event, source));
 
       // Notify presence state about user activity
       presence.notifyActivity(from.presenceKey, affectedAnnotations(events));
