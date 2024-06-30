@@ -7,11 +7,20 @@ import {
   Visibility
 } from '../../SupabaseAnnotation';
 
-export const parseProfileRecord = (p: ProfileRecord | undefined): User => p ? ({
-  id: p.id,
-  name: p.nickname,
-  avatar: p.avatar_url
-}) : undefined;
+export const parseProfileRecord = (p?: ProfileRecord): User => {
+  if (!p) return;
+
+  const { nickname, first_name, last_name } = p;
+
+  const name = nickname ||
+    (first_name || last_name) ? `${first_name} ${last_name}`.trim() : undefined;
+
+  return {
+    id: p.id,
+    name,
+    avatar: p.avatar_url
+  }
+}
 
 export const parseBodyRecord = (body: BodyRecord): SupabaseAnnotationBody => ({
   id: body.id,
