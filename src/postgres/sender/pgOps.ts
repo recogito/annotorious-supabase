@@ -51,12 +51,16 @@ export const pgOps = (
           created_by:profiles!targets_created_by_fkey(
             id,
             nickname,
+            first_name,
+            last_name,
             avatar_url
           ),
           updated_at,
           updated_by:profiles!targets_updated_by_fkey(
             id,
             nickname,
+            first_name,
+            last_name,
             avatar_url
           ),
           version,
@@ -69,12 +73,16 @@ export const pgOps = (
           created_by:profiles!bodies_created_by_fkey(
             id,
             nickname,
+            first_name,
+            last_name,
             avatar_url
           ),
           updated_at,
           updated_by:profiles!bodies_updated_by_fkey(
             id,
             nickname,
+            first_name,
+            last_name,
             avatar_url
           ),
           version,

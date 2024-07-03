@@ -12,8 +12,12 @@ export const parseProfileRecord = (p?: ProfileRecord): User => {
 
   const { nickname, first_name, last_name } = p;
 
-  const name = nickname ||
-    (first_name || last_name) ? `${first_name} ${last_name}`.trim() : undefined;
+  let name: string | undefined;
+
+  if (nickname)
+    name = nickname;
+  else if (first_name || last_name)
+    name = [first_name, last_name].filter(Boolean).join(' ');
 
   return {
     id: p.id,
