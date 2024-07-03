@@ -1,6 +1,6 @@
 {
   "name": "@recogito/annotorious-supabase",
-  "version": "1.0.0-rc.12",
+  "version": "1.0.0-rc.14",
   "description": "Annotorious storage plugin for Recogito's Supabase backend",
   "type": "module",
   "main": "dist/annotorious-supabase.js",
@@ -16,8 +16,8 @@
     "@sveltejs/vite-plugin-svelte": "^3.1.1",
     "@types/node": "^20.14.9",
     "svelte-preprocess": "^6.0.1",
-    "typescript": "^5.5.2",
-    "vite": "^5.3.2",
+    "typescript": "^5.5.3",
+    "vite": "^5.3.3",
     "vite-plugin-dts": "^3.9.1"
   },
   "dependencies": {
