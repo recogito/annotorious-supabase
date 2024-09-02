@@ -1,6 +1,6 @@
 {
   "name": "@recogito/annotorious-supabase",
-  "version": "1.0.0-rc.15",
+  "version": "1.0.0",
   "description": "Annotorious storage plugin for Recogito's Supabase backend",
   "type": "module",
   "main": "dist/annotorious-supabase.js",
