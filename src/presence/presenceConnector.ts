@@ -35,7 +35,7 @@ export const PresenceConnector = (anno: Annotator<Annotation, Annotation>, appea
     });
 
     // Link selection events to Supabase RT message channel
-    anno.on('selectionChanged', selection => {
+    anno.on('selectionChanged', selection => {      
       const event: SelectEvent = {
         from: { presenceKey: PRESENCE_KEY, ...anno.getUser() },
         ids: selection && selection.length > 0 ? selection.map(a => a.id) : null
@@ -52,7 +52,8 @@ export const PresenceConnector = (anno: Annotator<Annotation, Annotation>, appea
 
     channel.on('broadcast', { event: 'select' }, event => {
       const { from, ids } = (event.payload as SelectEvent);
-      presence.updateSelection(from.presenceKey, ids);
+      if (from.presenceKey !== PRESENCE_KEY)
+        presence.updateSelection(from.presenceKey, ids);
     });
   }
 
