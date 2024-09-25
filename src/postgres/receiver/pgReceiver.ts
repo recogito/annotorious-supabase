@@ -87,16 +87,20 @@ export const createReceiver = (
     const annotation = store.getAnnotation(annotation_id);
     if (!annotation) {
       const target = resolveTargetChange(event, presence.getPresentUsers());
-
+  
       const shouldInsert = !source || target.selector['source'] === source;
-
-      if (shouldInsert)
+      if (shouldInsert) {
         store.addAnnotation({
           id: annotation_id,
           bodies: [],
-          target: resolveTargetChange(event, presence.getPresentUsers()),
+          target,
           layer_id: event.new.layer_id
         }, Origin.REMOTE);
+      } else {
+        const source: string = target.selector['source'];
+        const user = target.creator!;
+        emitter.emit('offPageActivity', { source, user })
+      }
     }
   }
 
