@@ -100,8 +100,10 @@ export const createSender = (
         ? annotations.filter(a => 'source' in a.target.selector && a.target.selector.source === source)
         : annotations;
       
+      // Note that we only feed annotations for this source into the Annotator state...
       anno.state.store.bulkAddAnnotation(filteredBySource, true, Origin.REMOTE);
 
+      // ...but still pass ALL annotations upwards in the event
       emitter.emit('initialLoad', annotations);
     }
   });
