@@ -43,7 +43,8 @@ export const PresenceConnector = (
     anno.on('selectionChanged', selection => {      
       const event: SelectEvent = {
         from: { presenceKey: PRESENCE_KEY, ...anno.getUser() },
-        ids: selection && selection.length > 0 ? selection.map(a => a.id) : null
+        ids: selection && selection.length > 0 ? selection.map(a => a.id) : null,
+        source
       };
 
       setTimeout(() => {
@@ -56,8 +57,9 @@ export const PresenceConnector = (
     });
 
     channel.on('broadcast', { event: 'select' }, event => {
-      const { from, ids } = (event.payload as SelectEvent);
-      if (from.presenceKey !== PRESENCE_KEY)
+      const { from, ids, source: activitySource } = (event.payload as SelectEvent);
+
+      if ((!source || (source === activitySource)) && from.presenceKey !== PRESENCE_KEY)
         presence.updateSelection(from.presenceKey, ids);
     });
   }

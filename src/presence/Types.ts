@@ -6,4 +6,6 @@ export interface SelectEvent {
 
   ids: string[] | null;
 
+  source?: string;
+
 }
