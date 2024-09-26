@@ -61,6 +61,8 @@ export const PresenceConnector = (
 
       if ((!source || (source === activitySource)) && from.presenceKey !== PRESENCE_KEY)
         presence.updateSelection(from.presenceKey, ids);
+      else 
+        emitter.emit('offPageActivity', { source: activitySource, user: from });
     });
   }
 
