@@ -11,7 +11,8 @@ export interface BroadcastMessage {
 
 }
 
-export type BroadcastEvent = 
+export type BroadcastEvent =
+  ChangeSourceEvent |
   CreateAnnotationEvent | 
   DeleteAnnotationEvent |
   CreateBodyEvent |
@@ -20,6 +21,8 @@ export type BroadcastEvent =
   UpdateTargetEvent;
 
 export enum BroadcastEventType {
+
+  CHANGE_SOURCE = 'CHGSRC',
 
   CREATE_ANNOTATION = 'CRTANN',
 
@@ -35,52 +38,58 @@ export enum BroadcastEventType {
 
 }
 
+export type ChangeSourceEvent = {
+
+  type: BroadcastEventType.CHANGE_SOURCE
+
+}
+
 export type CreateAnnotationEvent = {
 
-  type: BroadcastEventType.CREATE_ANNOTATION;
+  type: BroadcastEventType.CREATE_ANNOTATION,
 
-  annotation: SupabaseAnnotation;
+  annotation: SupabaseAnnotation
 
 }
 
 export type DeleteAnnotationEvent = {
 
-  type: BroadcastEventType.DELETE_ANNOTATION;
+  type: BroadcastEventType.DELETE_ANNOTATION,
 
-  id: string;
+  id: string
 
 } 
 
 export type CreateBodyEvent = {
 
-  type: BroadcastEventType.CREATE_BODY;
+  type: BroadcastEventType.CREATE_BODY,
 
-  body: AnnotationBody;
+  body: AnnotationBody
 
 }
 
 export type DeleteBodyEvent = {
 
-  type: BroadcastEventType.DELETE_BODY;
+  type: BroadcastEventType.DELETE_BODY,
 
-  id: string;
+  id: string,
 
-  annotation: string;
+  annotation: string
 
 }
 
 export type UpdateBodyEvent = {
 
-  type: BroadcastEventType.UPDATE_BODY;
+  type: BroadcastEventType.UPDATE_BODY,
 
-  body: AnnotationBody;
+  body: AnnotationBody
 
 }
 
 export type UpdateTargetEvent = {
 
-  type: BroadcastEventType.UPDATE_TARGET;
+  type: BroadcastEventType.UPDATE_TARGET,
 
-  target: AnnotationTarget;
+  target: AnnotationTarget
 
 }

@@ -3,7 +3,7 @@ import { Annotation, Annotator, PRESENCE_KEY, StoreChangeEvent } from '@annotori
 import type { RealtimeChannel } from '@supabase/realtime-js';
 import type { PresenceConnector } from '../presence';
 import { affectedAnnotations, apply, marshal } from './broadcastProtocol';
-import type { BroadcastMessage } from './Types';
+import { BroadcastEventType, type BroadcastMessage } from './Types';
 import type { SupabaseAnnotation } from 'src/SupabaseAnnotation';
 
 // Duration during which fast successive store changes get merged 
@@ -78,6 +78,18 @@ export const BroadcastConnector = (
     observer = onStoreChange(channel);
 
     store.observe(observer, { origin: Origin.LOCAL });
+
+    if (source) {
+      channel.send({
+        type: 'broadcast',
+        event: 'change',
+        payload: {
+          from: { presenceKey: PRESENCE_KEY, ...anno.getUser() },
+          events: [{ type: BroadcastEventType.CHANGE_SOURCE }],
+          source
+        }
+      });
+    }
 
     // Listen to RT channel broadcast events
     channel.on('broadcast', { event: 'change' }, event => {
