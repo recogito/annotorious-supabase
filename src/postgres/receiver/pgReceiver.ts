@@ -113,7 +113,7 @@ export const createReceiver = (
     const annotation = store.getAnnotation(annotation_id);
     if (annotation) {
       if (annotation.target.version < version) {
-        console.log('[PGCDC] Overriding target');
+        // console.log('[PGCDC] Overriding target');
         store.updateTarget(resolveTargetChange(event, presence.getPresentUsers(), annotation), Origin.REMOTE);
       }
     } else {
