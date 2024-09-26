@@ -63,11 +63,10 @@ export const PresenceConnector = (
   }
 
   const notifyActivity = (user: User & { presenceKey: string }, annotationIds: string[], activitySource?: string) => {
-    if (source && source !== activitySource) {
+    if (source && source !== activitySource)
       emitter.emit('offPageActivity', { source: activitySource, user });
-    } else {
+    else
       presence.notifyActivity(user.presenceKey, annotationIds);
-    }
   }
 
   return {

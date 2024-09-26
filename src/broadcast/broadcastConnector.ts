@@ -81,15 +81,16 @@ export const BroadcastConnector = (
 
     // Listen to RT channel broadcast events
     channel.on('broadcast', { event: 'change' }, event => {
-      const { from, events, source } = event.payload as BroadcastMessage;
+      const { from, events, source: activitySource } = event.payload as BroadcastMessage;
 
-      console.log('[Broadcast Rx]', events);
+      // console.log('[Broadcast Rx]', { from, events, source });
 
       // Apply the change event to the store
-      events.forEach(event => apply(store, event, source));
+      if (!source || activitySource === source)
+        events.forEach(event => apply(store, event, source));
 
       // Notify presence state about user activity
-      presence.notifyActivity(from, affectedAnnotations(events), source);
+      presence.notifyActivity(from, affectedAnnotations(events), activitySource);
     });
   }
 
