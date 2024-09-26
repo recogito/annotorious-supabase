@@ -6,7 +6,12 @@ import type { SupabasePluginEvents } from '../SupabasePluginEvents';
 import type { SelectEvent } from './Types';
 import type { AppearanceProvider } from '@annotorious/core';
 
-export const PresenceConnector = (anno: Annotator<Annotation, Annotation>, appearanceProvider: AppearanceProvider, emitter: Emitter<SupabasePluginEvents>) => {
+export const PresenceConnector = (
+  anno: Annotator<Annotation, Annotation>, 
+  appearanceProvider: AppearanceProvider, 
+  emitter: Emitter<SupabasePluginEvents>,
+  source?: string
+) => {
 
   let channel: RealtimeChannel;
 
@@ -57,11 +62,19 @@ export const PresenceConnector = (anno: Annotator<Annotation, Annotation>, appea
     });
   }
 
+  const notifyActivity = (user: User & { presenceKey: string }, annotationIds: string[], activitySource?: string) => {
+    if (source && source !== activitySource) {
+      emitter.emit('offPageActivity', { source: activitySource, user });
+    } else {
+      presence.notifyActivity(user.presenceKey, annotationIds);
+    }
+  }
+
   return {
     connect,
     getPresentUsers: presence.getPresentUsers,
     destroy: () => channel && channel.untrack(),
-    notifyActivity: presence.notifyActivity,
+    notifyActivity,
     trackUser
   }
 

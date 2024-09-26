@@ -7,6 +7,8 @@ export interface BroadcastMessage {
 
   events: BroadcastEvent[];
 
+  source?: string;
+
 }
 
 export type BroadcastEvent = 

@@ -96,10 +96,6 @@ export const createReceiver = (
           target,
           layer_id: event.new.layer_id
         }, Origin.REMOTE);
-      } else {
-        const source: string = target.selector['source'];
-        const user = target.creator!;
-        emitter.emit('offPageActivity', { source, user })
       }
     }
   }

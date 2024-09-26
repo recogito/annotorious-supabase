@@ -1,5 +1,5 @@
 import { Origin } from '@annotorious/core';
-import type { Annotation, ChangeSet, Store, StoreChangeEvent } from '@annotorious/core';
+import type { Annotation, ChangeSet, Store } from '@annotorious/core';
 import { BroadcastEventType } from './Types';
 import type { BroadcastEvent, CreateAnnotationEvent } from './Types';
 import { SupabaseAnnotation, Visibility } from '../SupabaseAnnotation';

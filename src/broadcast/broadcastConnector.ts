@@ -34,7 +34,8 @@ export const BroadcastConnector = (
     const send = (changes: ChangeSet<Annotation>) => {
       const message: BroadcastMessage = {
         from: { presenceKey: PRESENCE_KEY, ...anno.getUser() },
-        events: marshal(changes, store, defaultLayerId, privacyMode, source)
+        events: marshal(changes, store, defaultLayerId, privacyMode, source),
+        source
       };
 
       // Not all store changes trigger broadcast events - make
@@ -80,7 +81,7 @@ export const BroadcastConnector = (
 
     // Listen to RT channel broadcast events
     channel.on('broadcast', { event: 'change' }, event => {
-      const { from, events } = event.payload as BroadcastMessage;
+      const { from, events, source } = event.payload as BroadcastMessage;
 
       console.log('[Broadcast Rx]', events);
 
@@ -88,7 +89,7 @@ export const BroadcastConnector = (
       events.forEach(event => apply(store, event, source));
 
       // Notify presence state about user activity
-      presence.notifyActivity(from.presenceKey, affectedAnnotations(events));
+      presence.notifyActivity(from, affectedAnnotations(events), source);
     });
   }
 
