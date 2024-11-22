@@ -87,6 +87,15 @@ export const createReceiver = (
     const annotation = store.getAnnotation(annotation_id);
     if (!annotation) {
       const target = resolveTargetChange(event, presence.getPresentUsers());
+
+      // Ignore targets created by myself. Note that, normally, targets created by 
+      // self would mean that there's already an annotation. Thus, we wouldn't usually
+      // reach this branch. HOWEVER: there is one edge case where the user creates
+      // an annotation and then instantly deletes it again. In this case, the store
+      // won't have the annotation anymore when this onInsertTarget handler is triggered
+      // from the Supabase event.
+      // See https://github.com/performant-software/vico/issues/351
+      if (target.creator?.id === anno.getUser().id) return;
   
       const shouldInsert = !source || target.selector['source'] === source;
       if (shouldInsert) {
