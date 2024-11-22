@@ -1,4 +1,4 @@
-import { Annotation, createPresenceState, PRESENCE_KEY } from '@annotorious/core';
+import { type Annotation, createPresenceState, PRESENCE_KEY } from '@annotorious/core';
 import type { Annotator, User } from '@annotorious/core';
 import type { RealtimeChannel } from '@supabase/realtime-js';
 import type { Emitter } from 'nanoevents';

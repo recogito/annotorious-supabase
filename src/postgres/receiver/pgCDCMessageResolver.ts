@@ -1,4 +1,4 @@
-import { Annotation, getContributors, PresentUser } from '@annotorious/core';
+import { type Annotation, getContributors, type PresentUser } from '@annotorious/core';
 import type { SupabaseAnnotationBody, SupabaseAnnotationTarget } from '../../SupabaseAnnotation';
 import type { BodyChangeEvent, TargetChangeEvent } from '../Types';
 

@@ -1,5 +1,5 @@
-import { ChangeSet, Origin, mergeChanges } from '@annotorious/core';
-import { Annotation, Annotator, PRESENCE_KEY, StoreChangeEvent } from '@annotorious/core';
+import { type ChangeSet, Origin, mergeChanges } from '@annotorious/core';
+import { type Annotation, type Annotator, PRESENCE_KEY, type StoreChangeEvent } from '@annotorious/core';
 import type { RealtimeChannel } from '@supabase/realtime-js';
 import type { PresenceConnector } from '../presence';
 import { affectedAnnotations, apply, marshal } from './broadcastProtocol';

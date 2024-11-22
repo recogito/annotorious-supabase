@@ -1,9 +1,9 @@
 import type { AnnotationBody, User } from '@annotorious/core';
 import type { AnnotationRecord, BodyRecord, ProfileRecord, TargetRecord } from '../Types';
 import { 
-  SupabaseAnnotation, 
-  SupabaseAnnotationBody, 
-  SupabaseAnnotationTarget, 
+  type SupabaseAnnotation, 
+  type SupabaseAnnotationBody, 
+  type SupabaseAnnotationTarget, 
   Visibility
 } from '../../SupabaseAnnotation';
 

@@ -1,4 +1,4 @@
-import { Annotator, Origin } from '@annotorious/core';
+import { type Annotator, Origin } from '@annotorious/core';
 import type { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 import type { Emitter } from 'nanoevents';
 import type { SupabaseAnnotation } from '../../SupabaseAnnotation';

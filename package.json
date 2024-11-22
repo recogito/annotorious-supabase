@@ -13,16 +13,14 @@
   "author": "Rainer Simon",
   "license": "BSD-3-Clause",
   "devDependencies": {
-    "@sveltejs/vite-plugin-svelte": "^3.1.2",
-    "@types/node": "^22.7.2",
-    "svelte-preprocess": "^6.0.2",
-    "typescript": "^5.6.2",
-    "vite": "^5.4.8",
-    "vite-plugin-dts": "^4.2.2"
+    "@types/node": "^22.9.1",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.11",
+    "vite-plugin-dts": "^4.3.0"
   },
   "dependencies": {
-    "@annotorious/core": "^3.0.8",
-    "@supabase/supabase-js": "^2.45.4",
-    "nanoevents": "^9.0.0"
+    "@annotorious/core": "^3.0.12",
+    "@supabase/supabase-js": "^2.46.1",
+    "nanoevents": "^9.1.0"
   }
 }

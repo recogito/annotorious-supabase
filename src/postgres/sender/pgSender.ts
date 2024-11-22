@@ -1,4 +1,4 @@
-import { Annotation, Annotator, diffAnnotations, Origin } from '@annotorious/core';
+import { type Annotation, type Annotator, diffAnnotations, Origin } from '@annotorious/core';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Emitter } from 'nanoevents';
 import type { SupabaseAnnotation } from '../../SupabaseAnnotation';

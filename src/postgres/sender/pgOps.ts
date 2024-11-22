@@ -3,9 +3,9 @@ import type { Annotation, AnnotationBody, Annotator, AnnotationTarget } from '@a
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { PostgrestBuilder, PostgrestSingleResponse } from '@supabase/postgrest-js';
 import { 
-  SupabaseAnnotation, 
-  SupabaseAnnotationBody, 
-  SupabaseAnnotationTarget, 
+  type SupabaseAnnotation, 
+  type SupabaseAnnotationBody, 
+  type SupabaseAnnotationTarget, 
   Visibility 
 } from '../../SupabaseAnnotation';
 

@@ -2,7 +2,7 @@ import { Origin } from '@annotorious/core';
 import type { Annotation, ChangeSet, Store } from '@annotorious/core';
 import { BroadcastEventType } from './Types';
 import type { BroadcastEvent, CreateAnnotationEvent } from './Types';
-import { SupabaseAnnotation, Visibility } from '../SupabaseAnnotation';
+import { type SupabaseAnnotation, Visibility } from '../SupabaseAnnotation';
 
 /**
  * Returns a list of unique IDs of annotations that are 

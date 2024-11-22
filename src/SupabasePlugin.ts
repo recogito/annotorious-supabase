@@ -1,5 +1,5 @@
 import { createNanoEvents } from 'nanoevents';
-import { PRESENCE_KEY, PresentUser, User } from '@annotorious/core';
+import { PRESENCE_KEY, type PresentUser, type User } from '@annotorious/core';
 import type { Annotator } from '@annotorious/core';
 import { createClient, RealtimeChannel } from '@supabase/supabase-js';
 import type { SupabasePluginConfig } from './SupabasePluginConfig';
