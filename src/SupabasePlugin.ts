@@ -1,7 +1,8 @@
 import { createNanoEvents } from 'nanoevents';
+import { createBrowserClient } from '@supabase/ssr';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 import { PRESENCE_KEY, type PresentUser, type User } from '@annotorious/core';
 import type { Annotator } from '@annotorious/core';
-import { createClient, RealtimeChannel } from '@supabase/supabase-js';
 import type { SupabasePluginConfig } from './SupabasePluginConfig';
 import type { SupabasePluginEvents } from './SupabasePluginEvents';
 import { BroadcastConnector } from './broadcast';
@@ -19,7 +20,7 @@ export const SupabasePlugin = (anno: Annotator<SupabaseAnnotation, SupabaseAnnot
     Array.isArray(config.layerIds) ? config.layerIds[0] : config.layerIds;
 
   // Create Supabase client
-  const supabase = createClient(supabaseUrl, apiKey, {
+  const supabase = createBrowserClient(supabaseUrl, apiKey, {
     realtime: {
       params: {
         eventsPerSecond: eventsPerSecond || 20,
