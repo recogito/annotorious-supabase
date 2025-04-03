@@ -101,7 +101,7 @@ export const createSender = (
         : annotations;
       
       // Note that we only feed annotations for this source into the Annotator state...
-      anno.state.store.bulkAddAnnotation(filteredBySource, true, Origin.REMOTE);
+      anno.state.store.bulkAddAnnotations(filteredBySource, true, Origin.REMOTE);
 
       // ...but still pass ALL annotations upwards in the event
       emitter.emit('initialLoad', annotations);
