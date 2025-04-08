@@ -1,4 +1,5 @@
 import { type Annotation, type Annotator, diffAnnotations, Origin } from '@annotorious/core';
+import type { Canvas } from '@allmaps/iiif-parser';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Emitter } from 'nanoevents';
 import type { SupabaseAnnotation } from '../../SupabaseAnnotation';
@@ -13,7 +14,8 @@ export const createSender = (
   layerIds: string | string[], 
   supabase: SupabaseClient, 
   emitter: Emitter<SupabasePluginEvents>,
-  source?: string
+  source?: string,
+  canvases?: Canvas[]
 ) => {
 
   let privacyMode = false;
@@ -96,9 +98,13 @@ export const createSender = (
     } else {
       const annotations = (data as unknown as AnnotationRecord[]).map(parseAnnotationRecord);
 
+      console.log('filtering by source', source);
+
       const filteredBySource = source
         ? annotations.filter(a => 'source' in a.target.selector && a.target.selector.source === source)
         : annotations;
+
+      console.log(annotations.map(a => 'source' in a.target.selector ? a.target.selector.source : undefined));
       
       // Note that we only feed annotations for this source into the Annotator state...
       anno.state.store.bulkAddAnnotations(filteredBySource, true, Origin.REMOTE);

@@ -35,7 +35,7 @@ export const SupabasePlugin = (anno: Annotator<SupabaseAnnotation, SupabaseAnnot
 
   const broadcast = BroadcastConnector(anno, defaultLayerId, presence, config.source);
   
-  const postgres = PostgresConnector(anno, defaultLayerId, config.layerIds, supabase, presence, emitter, config.source);
+  const postgres = PostgresConnector(anno, defaultLayerId, config.layerIds, supabase, presence, emitter, config.source, config.canvases);
 
   // Creates the channel and inits all connectors
   const init = () => {

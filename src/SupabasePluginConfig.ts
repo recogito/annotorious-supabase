@@ -1,3 +1,4 @@
+import type { Canvas } from '@allmaps/iiif-parser';
 import type { AppearanceProvider } from '@annotorious/core';
 
 export type SupabasePluginConfig = {
@@ -15,6 +16,9 @@ export type SupabasePluginConfig = {
   layerIds: string | string[],
   
   source?: string;
+
+  // @deprecated
+  canvases?: Canvas[];
 
   supabaseUrl: string,
   

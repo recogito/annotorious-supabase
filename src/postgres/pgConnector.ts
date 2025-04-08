@@ -1,5 +1,6 @@
 import type { RealtimeChannel } from '@supabase/realtime-js';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Canvas } from '@allmaps/iiif-parser';
 import type { Annotation, Annotator } from '@annotorious/core';
 import type { Emitter } from 'nanoevents';
 import type { SupabasePluginEvents } from '../SupabasePluginEvents';
@@ -14,7 +15,8 @@ export const PostgresConnector = (
   supabase: SupabaseClient, 
   presence: ReturnType<typeof PresenceConnector>, 
   emitter: Emitter<SupabasePluginEvents>,
-  source?: string
+  source?: string,
+  canvases?: Canvas[]
 ) => {
 
   let privacyMode = false;
@@ -24,7 +26,7 @@ export const PostgresConnector = (
   let receiver: ReturnType<typeof createReceiver> | undefined;
 
   const connect = (channel: RealtimeChannel) => {
-    sender = createSender(anno, defaultLayerId, layerIds, supabase, emitter, source);
+    sender = createSender(anno, defaultLayerId, layerIds, supabase, emitter, source, canvases);
     sender.privacyMode = privacyMode;
 
     receiver = createReceiver(anno, layerIds, channel, presence, emitter, source);
