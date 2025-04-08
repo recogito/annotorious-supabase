@@ -15,8 +15,7 @@ export const PostgresConnector = (
   supabase: SupabaseClient, 
   presence: ReturnType<typeof PresenceConnector>, 
   emitter: Emitter<SupabasePluginEvents>,
-  source?: string,
-  canvases?: Canvas[]
+  source?: string | Canvas
 ) => {
 
   let privacyMode = false;
@@ -26,7 +25,7 @@ export const PostgresConnector = (
   let receiver: ReturnType<typeof createReceiver> | undefined;
 
   const connect = (channel: RealtimeChannel) => {
-    sender = createSender(anno, defaultLayerId, layerIds, supabase, emitter, source, canvases);
+    sender = createSender(anno, defaultLayerId, layerIds, supabase, emitter, source);
     sender.privacyMode = privacyMode;
 
     receiver = createReceiver(anno, layerIds, channel, presence, emitter, source);

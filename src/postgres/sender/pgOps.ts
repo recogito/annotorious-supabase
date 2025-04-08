@@ -1,4 +1,5 @@
 import { Origin } from '@annotorious/core';
+import type { Canvas } from '@allmaps/iiif-parser';
 import type { Annotation, AnnotationBody, Annotator, AnnotationTarget } from '@annotorious/core';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { PostgrestBuilder, PostgrestSingleResponse } from '@supabase/postgrest-js';
@@ -12,7 +13,7 @@ import {
 export const pgOps = (
   anno: Annotator<Annotation, Annotation>, 
   supabase: SupabaseClient,
-  source?: string
+  source?: string | Canvas
 ) => {
 
   const { store } = anno.state;
@@ -110,7 +111,7 @@ export const pgOps = (
     };
 
     if (source)
-      versioned.target.selector['source'] = source;
+      versioned.target.selector['source'] = typeof source === 'string' ? source : source.uri;
 
     store.updateAnnotation(versioned, Origin.REMOTE);
     
@@ -128,7 +129,7 @@ export const pgOps = (
   const createTarget = (t: AnnotationTarget, layer_id: string) => {
     const selector = source ? {
       ...t.selector,
-      source
+      source: typeof source === 'string' ? source : source.uri
     } : t.selector;
 
     return supabase
@@ -215,7 +216,7 @@ export const pgOps = (
       };
 
       if (source)
-        versioned.selector['source'] = source;
+        versioned.selector['source'] = typeof source === 'string' ?  source : source.uri;
 
       store.updateTarget(versioned, Origin.REMOTE);
 

@@ -30,12 +30,14 @@ export const SupabasePlugin = (anno: Annotator<SupabaseAnnotation, SupabaseAnnot
 
   // Set up channel and connectors for each channel type
   let channel: RealtimeChannel = null;
-  
-  const presence = PresenceConnector(anno, config.appearanceProvider, emitter, config.source);
 
-  const broadcast = BroadcastConnector(anno, defaultLayerId, presence, config.source);
+  const sourceId = typeof config.source === 'string' ? config.source : config.source.uri;
   
-  const postgres = PostgresConnector(anno, defaultLayerId, config.layerIds, supabase, presence, emitter, config.source, config.canvases);
+  const presence = PresenceConnector(anno, config.appearanceProvider, emitter, sourceId);
+
+  const broadcast = BroadcastConnector(anno, defaultLayerId, presence, sourceId);
+  
+  const postgres = PostgresConnector(anno, defaultLayerId, config.layerIds, supabase, presence, emitter, config.source);
 
   // Creates the channel and inits all connectors
   const init = () => {

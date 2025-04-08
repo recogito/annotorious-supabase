@@ -1,5 +1,6 @@
 import { type Annotator, Origin } from '@annotorious/core';
 import type { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
+import type { Canvas } from '@allmaps/iiif-parser';
 import type { Emitter } from 'nanoevents';
 import type { SupabaseAnnotation } from '../../SupabaseAnnotation';
 import type { PresenceConnector } from '../../presence';
@@ -13,7 +14,7 @@ export const createReceiver = (
   channel: RealtimeChannel, 
   presence: ReturnType<typeof PresenceConnector>, 
   emitter: Emitter<SupabasePluginEvents>,
-  source?: string
+  source?: string | Canvas
 ) => {
 
   const { store } = anno.state;
@@ -96,8 +97,10 @@ export const createReceiver = (
       // from the Supabase event.
       // See https://github.com/performant-software/vico/issues/351
       if (target.creator?.id === anno.getUser().id) return;
-  
-      const shouldInsert = !source || target.selector['source'] === source;
+
+      const sourceURI = source ? typeof source === 'string' ? source : source.uri : undefined;
+      const shouldInsert = !source || target.selector['source'] === sourceURI;
+
       if (shouldInsert) {
         store.addAnnotation({
           id: annotation_id,

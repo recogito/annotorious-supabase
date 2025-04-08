@@ -15,10 +15,7 @@ export type SupabasePluginConfig = {
 
   layerIds: string | string[],
   
-  source?: string;
-
-  // @deprecated
-  canvases?: Canvas[];
+  source?: string | Canvas;
 
   supabaseUrl: string,
   
