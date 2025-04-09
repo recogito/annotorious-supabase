@@ -1,4 +1,5 @@
 import { Origin } from '@annotorious/core';
+import type { Canvas } from '@allmaps/iiif-parser';
 import type { Annotation, AnnotationBody, Annotator, AnnotationTarget } from '@annotorious/core';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { PostgrestBuilder, PostgrestSingleResponse } from '@supabase/postgrest-js';
@@ -12,10 +13,12 @@ import {
 export const pgOps = (
   anno: Annotator<Annotation, Annotation>, 
   supabase: SupabaseClient,
-  source?: string
+  source?: string | Canvas
 ) => {
 
   const { store } = anno.state;
+
+  const sourceURI = typeof source === 'string' ? source : source.uri;
 
   // Generic Supabase retry handler
   const withRetry = async (requestFn: () => PostgrestBuilder<{ [x: string]: any}[]>, retries: number = 3) => {
@@ -110,7 +113,7 @@ export const pgOps = (
     };
 
     if (source)
-      versioned.target.selector['source'] = source;
+      versioned.target.selector['source'] = sourceURI;
 
     store.updateAnnotation(versioned, Origin.REMOTE);
     
@@ -128,7 +131,7 @@ export const pgOps = (
   const createTarget = (t: AnnotationTarget, layer_id: string) => {
     const selector = source ? {
       ...t.selector,
-      source
+      source: sourceURI
     } : t.selector;
 
     return supabase
@@ -215,7 +218,7 @@ export const pgOps = (
       };
 
       if (source)
-        versioned.selector['source'] = source;
+        versioned.selector['source'] = sourceURI;
 
       store.updateTarget(versioned, Origin.REMOTE);
 

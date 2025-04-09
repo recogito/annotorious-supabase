@@ -8,14 +8,37 @@ import { parseAnnotationRecord } from './pgCrosswalk';
 import type { AnnotationRecord } from '../Types';
 import { pgOps } from './pgOps';
 
+/**
+ * For legacy interop. Normally, the 'source' of an annotation will be the same
+ * as the current source prop provided to the plugin. However, older versions of
+ * Recogito used the wrong value for the source: the derived Image API URL.
+ * 
+ * This means that annotations produced in an old system will get filtered out 
+ * in a new system. This helper method extracts both valid 'source' URL values,
+ * so that old annotations remain supported by new versions for Recogito Studio.
+ */
+const getValidSources = (canvas: string | Canvas): string[] => {
+  if (typeof canvas === 'string') return [canvas];
+
+  const source = canvas.uri;
+  const imageURI = canvas?.image?.uri;
+
+  // Should never happen
+  if (!imageURI) return [source];
+
+  const legacyInterop = imageURI.endsWith('info.json') 
+    ? imageURI : `${imageURI.endsWith('/') ? imageURI : `${imageURI}/`}info.json`;
+
+  return [source, legacyInterop];
+}
+
 export const createSender = (
   anno: Annotator<Annotation, Annotation>, 
   defaultLayerId: string,
   layerIds: string | string[], 
   supabase: SupabaseClient, 
   emitter: Emitter<SupabasePluginEvents>,
-  source?: string,
-  canvases?: Canvas[]
+  source?: string | Canvas
 ) => {
 
   let privacyMode = false;
@@ -98,14 +121,15 @@ export const createSender = (
     } else {
       const annotations = (data as unknown as AnnotationRecord[]).map(parseAnnotationRecord);
 
-      console.log('filtering by source', source);
+      const filteredBySource = source ? annotations.filter(a => { 
+        if ('source' in a.target.selector) {
+          const validSources = getValidSources(source);
+          return validSources.includes(a.target.selector.source as string);
+        } else {
+          return false;
+        }
+      }) : annotations;
 
-      const filteredBySource = source
-        ? annotations.filter(a => 'source' in a.target.selector && a.target.selector.source === source)
-        : annotations;
-
-      console.log(annotations.map(a => 'source' in a.target.selector ? a.target.selector.source : undefined));
-      
       // Note that we only feed annotations for this source into the Annotator state...
       anno.state.store.bulkAddAnnotations(filteredBySource, true, Origin.REMOTE);
 
