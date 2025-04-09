@@ -98,7 +98,7 @@ export const createReceiver = (
       // See https://github.com/performant-software/vico/issues/351
       if (target.creator?.id === anno.getUser().id) return;
 
-      const sourceURI = source ? typeof source === 'string' ? source : source.uri : undefined;
+      const sourceURI = source ? typeof source === 'string' ? source : source?.uri : undefined;
       const shouldInsert = !source || target.selector['source'] === sourceURI;
 
       if (shouldInsert) {

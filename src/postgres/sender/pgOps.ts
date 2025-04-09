@@ -18,7 +18,7 @@ export const pgOps = (
 
   const { store } = anno.state;
 
-  const sourceURI = typeof source === 'string' ? source : source.uri;
+  const sourceURI = typeof source === 'string' ? source : source?.uri;
 
   // Generic Supabase retry handler
   const withRetry = async (requestFn: () => PostgrestBuilder<{ [x: string]: any}[]>, retries: number = 3) => {

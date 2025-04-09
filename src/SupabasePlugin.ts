@@ -31,7 +31,7 @@ export const SupabasePlugin = (anno: Annotator<SupabaseAnnotation, SupabaseAnnot
   // Set up channel and connectors for each channel type
   let channel: RealtimeChannel = null;
 
-  const sourceId = typeof config.source === 'string' ? config.source : config.source.uri;
+  const sourceId = typeof config.source === 'string' ? config.source : config.source?.uri;
   
   const presence = PresenceConnector(anno, config.appearanceProvider, emitter, sourceId);
 
