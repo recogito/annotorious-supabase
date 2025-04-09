@@ -18,6 +18,8 @@ export const pgOps = (
 
   const { store } = anno.state;
 
+  const sourceURI = typeof source === 'string' ? source : source.uri;
+
   // Generic Supabase retry handler
   const withRetry = async (requestFn: () => PostgrestBuilder<{ [x: string]: any}[]>, retries: number = 3) => {
     return new Promise<PostgrestSingleResponse<{ [x: string]: any}[]>>((resolve, reject) => {
@@ -111,7 +113,7 @@ export const pgOps = (
     };
 
     if (source)
-      versioned.target.selector['source'] = typeof source === 'string' ? source : source.uri;
+      versioned.target.selector['source'] = sourceURI;
 
     store.updateAnnotation(versioned, Origin.REMOTE);
     
@@ -129,7 +131,7 @@ export const pgOps = (
   const createTarget = (t: AnnotationTarget, layer_id: string) => {
     const selector = source ? {
       ...t.selector,
-      source: typeof source === 'string' ? source : source.uri
+      source: sourceURI
     } : t.selector;
 
     return supabase
@@ -216,7 +218,7 @@ export const pgOps = (
       };
 
       if (source)
-        versioned.selector['source'] = typeof source === 'string' ?  source : source.uri;
+        versioned.selector['source'] = sourceURI;
 
       store.updateTarget(versioned, Origin.REMOTE);
 
