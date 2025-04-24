@@ -249,7 +249,7 @@ export const pgOps = (
       .upsert(versioned.map(b => ({
         id: b.id,
         created_at: b.created,
-        created_by: b.creator.id,
+        created_by: b.creator?.id,
         updated_at: b.created,
         updated_by: anno.getUser().id,
         annotation_id: b.annotation,
