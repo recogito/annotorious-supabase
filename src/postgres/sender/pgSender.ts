@@ -53,8 +53,19 @@ export const createSender = (
         ops.createTarget(a.target, defaultLayerId).then(response => {
           if (response.error) {
             emitter.emit('saveError', response.error);
+          } else {
+            // Annotations don't normally have bodies when they are created through
+            // the interface, but plugins might programmatically create annotatoins
+            // with initial bodies.
+            if ((a.bodies || []).length > 0) {
+              ops.upsertBodies(a.bodies, defaultLayerId).then(response => {
+                if (response.error) {
+                  emitter.emit('saveError', response.error);
+                }
+              })
+            }
           }
-        });
+        })
       }
     });
 
