@@ -13,16 +13,16 @@
   "author": "Rainer Simon",
   "license": "BSD-3-Clause",
   "devDependencies": {
-    "@types/node": "^22.15.3",
-    "typescript": "^5.8.3",
-    "vite": "^6.3.3",
-    "vite-plugin-dts": "^4.5.3"
+    "@types/node": "^25.6.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.2",
+    "vite-plugin-dts": "^4.5.4"
   },
   "dependencies": {
-    "@allmaps/iiif-parser": "^1.0.0-beta.40",
-    "@annotorious/core": "^3.3.6",
-    "@supabase/ssr": "^0.6.1",
-    "@supabase/supabase-js": "^2.49.4",
+    "@allmaps/iiif-parser": "^1.0.0-beta.47",
+    "@annotorious/core": "^3.8.2",
+    "@supabase/ssr": "^0.10.2",
+    "@supabase/supabase-js": "^2.105.1",
     "nanoevents": "^9.1.0"
   }
 }

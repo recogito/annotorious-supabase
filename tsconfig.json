@@ -1,6 +1,5 @@
 {
   "compilerOptions": {
-    "baseUrl": ".",
     "checkJs": true,
     "declaration": true,
     "declarationMap": true,
@@ -10,8 +9,7 @@
     "incremental": false,
     "isolatedModules": true,
     "module": "ESNext",
-    "moduleResolution": "Node",
-    "outDir": "./dist",
+    "moduleResolution": "bundler",
     "paths": { 
       "@annotorious/openseadragon": ["../annotorious-openseadragon/src"] 
     },

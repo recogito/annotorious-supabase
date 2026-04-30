@@ -1,6 +1,6 @@
-import { createNanoEvents } from 'nanoevents';
+import { createNanoEvents, type Unsubscribe } from 'nanoevents';
 import { createBrowserClient } from '@supabase/ssr';
-import type { RealtimeChannel } from '@supabase/supabase-js';
+import type { RealtimeChannel, SupabaseClient } from '@supabase/supabase-js';
 import { PRESENCE_KEY, type PresentUser, type User } from '@annotorious/core';
 import type { Annotator } from '@annotorious/core';
 import type { SupabasePluginConfig } from './SupabasePluginConfig';
@@ -10,7 +10,24 @@ import { PostgresConnector } from './postgres';
 import { PresenceConnector } from './presence';
 import type { SupabaseAnnotation } from './SupabaseAnnotation';
 
-export const SupabasePlugin = (anno: Annotator<SupabaseAnnotation, SupabaseAnnotation>, config: SupabasePluginConfig) => {
+export interface SupabasePluginInstance {
+
+  auth: SupabaseClient['auth'];
+
+  connect: () => Promise<User>;
+
+  destroy: () => void;
+  
+  on: <E extends keyof SupabasePluginEvents>(event: E, callback: SupabasePluginEvents[E]) => Unsubscribe;
+  
+  privacyMode: boolean;
+
+}
+
+export const SupabasePlugin = (
+  anno: Annotator<SupabaseAnnotation, SupabaseAnnotation>, 
+  config: SupabasePluginConfig
+): SupabasePluginInstance => {
 
   const emitter = createNanoEvents<SupabasePluginEvents>();
 
@@ -29,11 +46,11 @@ export const SupabasePlugin = (anno: Annotator<SupabaseAnnotation, SupabaseAnnot
   });
 
   // Set up channel and connectors for each channel type
-  let channel: RealtimeChannel = null;
+  let channel: RealtimeChannel | null = null;
 
   const sourceId = typeof config.source === 'string' ? config.source : config.source?.uri;
   
-  const presence = PresenceConnector(anno, config.appearanceProvider, emitter, sourceId);
+  const presence = PresenceConnector(anno, config.appearanceProvider!, emitter, sourceId);
 
   const broadcast = BroadcastConnector(anno, defaultLayerId, presence, sourceId);
   
@@ -110,6 +127,8 @@ export const SupabasePlugin = (anno: Annotator<SupabaseAnnotation, SupabaseAnnot
     });
 
     supabase.auth.onAuthStateChange((event,session) => {
+      if (!session) return;
+
       if (event === 'USER_UPDATED') {
         const hasChanged = anno.getUser().id !== session.user.id;
         if (hasChanged) {
@@ -122,7 +141,7 @@ export const SupabasePlugin = (anno: Annotator<SupabaseAnnotation, SupabaseAnnot
       }
     });
 
-    anno.setPresenceProvider({ on });
+    anno.setPresenceProvider?.({ on });
   });
 
   const on = <E extends keyof SupabasePluginEvents>(event: E, callback: SupabasePluginEvents[E]) =>
