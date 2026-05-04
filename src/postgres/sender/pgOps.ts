@@ -21,7 +21,7 @@ export const pgOps = (
   const sourceURI = typeof source === 'string' ? source : source?.uri;
 
   // Generic Supabase retry handler
-  const withRetry = async (requestFn: () => PostgrestBuilder<{ [x: string]: any}[]>, retries: number = 3) => {
+  const withRetry = async (requestFn: () => PostgrestBuilder<Record<string, string>, { [x: string]: any}[], false>, retries: number = 3) => {
     return new Promise<PostgrestSingleResponse<{ [x: string]: any}[]>>((resolve, reject) => {
       const doRequest = () => requestFn().then(response => {
         if (response.error || !(response.data?.length > 0)) {
@@ -113,7 +113,7 @@ export const pgOps = (
     };
 
     if (source)
-      versioned.target.selector['source'] = sourceURI;
+      (versioned.target.selector as any).source = sourceURI;
 
     store.updateAnnotation(versioned, Origin.REMOTE);
     
@@ -154,6 +154,12 @@ export const pgOps = (
    */
   const archiveAnnotation = (a: Annotation) =>
     supabase.auth.getSession().then(({ data }) => {
+      if (!data.session) {
+        // Should never happen
+        console.error('[annotorious-supabase] Auth session missing', data);
+        return;
+      }
+
       const { access_token } = data.session;
 
       // @ts-ignore
@@ -218,7 +224,7 @@ export const pgOps = (
       };
 
       if (source)
-        versioned.selector['source'] = sourceURI;
+        (versioned.selector as any).source = sourceURI;
 
       store.updateTarget(versioned, Origin.REMOTE);
 

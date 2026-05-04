@@ -126,11 +126,12 @@ export const SupabasePlugin = (
       }
     });
 
-    supabase.auth.onAuthStateChange((event,session) => {
+    supabase.auth.onAuthStateChange((event, session) => {
       if (!session) return;
 
       if (event === 'USER_UPDATED') {
         const hasChanged = anno.getUser().id !== session.user.id;
+
         if (hasChanged) {
           anno.setUser({
             id: session.user.id

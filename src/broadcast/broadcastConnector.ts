@@ -4,7 +4,7 @@ import type { RealtimeChannel } from '@supabase/realtime-js';
 import type { PresenceConnector } from '../presence';
 import { affectedAnnotations, apply, marshal } from './broadcastProtocol';
 import { BroadcastEventType, type BroadcastMessage } from './Types';
-import type { SupabaseAnnotation } from 'src/SupabaseAnnotation';
+import type { SupabaseAnnotation } from '../SupabaseAnnotation';
 
 // Duration during which fast successive store changes get merged 
 // with the last change, rather than triggering a broadcast message
@@ -22,9 +22,9 @@ export const BroadcastConnector = (
 
   const { store } = anno.state;
 
-  let observer: (event: StoreChangeEvent<Annotation>) => void  = null;
+  let observer: ((event: StoreChangeEvent<Annotation>) => void) | null  = null;
 
-  let bufferedChanges: ChangeSet<SupabaseAnnotation>;
+  let bufferedChanges: ChangeSet<SupabaseAnnotation> | undefined;
 
   let timeoutId: ReturnType<typeof setTimeout>;
 
@@ -92,7 +92,7 @@ export const BroadcastConnector = (
     }
 
     // Listen to RT channel broadcast events
-    channel.on('broadcast', { event: 'change' }, event => {
+    channel.on('broadcast', { event: 'change' }, event => {      
       const { from, events, source: activitySource } = event.payload as BroadcastMessage;
 
       // console.log('[Broadcast Rx]', { from, events, source });

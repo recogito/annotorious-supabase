@@ -12,7 +12,6 @@ export const PresenceConnector = (
   emitter: Emitter<SupabasePluginEvents>,
   source?: string
 ) => {
-
   let channel: RealtimeChannel;
 
   const presence = createPresenceState(appearanceProvider);
@@ -60,15 +59,17 @@ export const PresenceConnector = (
       const { from, ids, source: activitySource } = (event.payload as SelectEvent);
 
       if ((!source || (source === activitySource)) && from.presenceKey !== PRESENCE_KEY)
+        // No source info or activity on this source -> update selection
         presence.updateSelection(from.presenceKey, ids);
-      else 
+      else if (activitySource)
+        // Off-page activity
         emitter.emit('offPageActivity', { source: activitySource, user: from });
     });
   }
 
   const notifyActivity = (user: User & { presenceKey: string }, annotationIds: string[], activitySource?: string) => {
     if (source && source !== activitySource)
-      emitter.emit('offPageActivity', { source: activitySource, user });
+      emitter.emit('offPageActivity', { source: activitySource!, user });
     else
       presence.notifyActivity(user.presenceKey, annotationIds);
   }

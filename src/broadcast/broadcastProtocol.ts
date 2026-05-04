@@ -9,7 +9,7 @@ import { type SupabaseAnnotation, Visibility } from '../SupabaseAnnotation';
  * affected the list of events.
  */
 export const affectedAnnotations = (events: BroadcastEvent[]) => {
-  const affectedAnnotations = events.reduce((annotationIds, e) => {
+  const affectedAnnotations = events.reduce<string[]>((annotationIds, e) => {
     if (e.type === BroadcastEventType.CREATE_ANNOTATION) {
       return [...annotationIds, e.annotation.id];
     } else if (e.type === BroadcastEventType.CREATE_BODY) {
@@ -20,8 +20,10 @@ export const affectedAnnotations = (events: BroadcastEvent[]) => {
       return [...annotationIds, e.body.annotation];
     } else if (e.type === BroadcastEventType.UPDATE_TARGET) {
       return [...annotationIds, e.target.annotation];
+    } else {
+      return annotationIds;
     }
-  }, [] as string[]);
+  }, []);
 
   // Unique IDs only
   return Array.from(new Set(affectedAnnotations));
@@ -60,7 +62,7 @@ export const marshal = (
       };
 
       if (source)
-        event.annotation.target.selector['source'] = source;
+        (event.annotation.target.selector as any).source = source;
 
       return event;
     });
@@ -82,21 +84,21 @@ export const marshal = (
     ({ type: BroadcastEventType.DELETE_ANNOTATION, id: annotation.id }));
 
   const deleteBodyEvents: BroadcastEvent[] = updated
-    .filter(update => update.bodiesDeleted?.length > 0)
-    .reduce((all, update) => ([
+    .filter(update => update.bodiesDeleted && update.bodiesDeleted.length > 0)
+    .reduce<BroadcastEvent[]>((all, update) => ([
       ...all, 
-      ...update.bodiesDeleted.map(body => ({ 
+      ...(update.bodiesDeleted || []).map(body => ({ 
         type: BroadcastEventType.DELETE_BODY, 
         id: body.id, 
         annotation: body.annotation 
-      }))]
+      } as BroadcastEvent))]
     ), []);
 
   const updateTargetEvents: BroadcastEvent[] = updated
     .filter(update => update.targetUpdated)
-    .reduce((all, update) => ([
+    .reduce<BroadcastEvent[]>((all, update) => ([
       ...all,
-      { type: BroadcastEventType.UPDATE_TARGET, target: update.targetUpdated.newTarget }
+      { type: BroadcastEventType.UPDATE_TARGET, target: update.targetUpdated!.newTarget }
     ]), []);
 
   // Apply version updates to the store
