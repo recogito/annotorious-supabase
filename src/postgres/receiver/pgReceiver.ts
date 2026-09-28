@@ -20,6 +20,23 @@ export const createReceiver = (
   const { store } = anno.state;
 
   /**
+   * Motivations from annotation INSERTs, keyed by annotation ID. The annotation
+   * record arrives before its target, but the annotation only gets added to the
+   * store once the target arrives (see onInsertTarget).
+   */
+  const motivations = new Map<string, string>();
+
+  /**
+   * After INSERT ANNOTATION:
+   * - Store the motivation (if any) until the target arrives.
+   */
+  const onInsertAnnotation = (event: AnnotationChangeEvent) => {
+    const { id, motivation } = event.new;
+    if (motivation)
+      motivations.set(id, motivation);
+  }
+
+  /**
    * After DELETE ANNOTATION:
    * - Check if annotation exists.
    * - Delete if it does.
@@ -85,6 +102,9 @@ export const createReceiver = (
     if (!value) 
       return; // Discard annotations without a target selector
 
+    const motivation = motivations.get(annotation_id);
+    motivations.delete(annotation_id);
+
     const annotation = store.getAnnotation(annotation_id);
     if (!annotation) {
       const target = resolveTargetChange(event, presence.getPresentUsers());
@@ -106,7 +126,8 @@ export const createReceiver = (
           id: annotation_id,
           bodies: [],
           target,
-          layer_id: event.new.layer_id
+          layer_id: event.new.layer_id,
+          motivation
         }, Origin.REMOTE);
       }
     }
@@ -137,7 +158,9 @@ export const createReceiver = (
     const event = evt as unknown as ChangeEvent;
     const { table, eventType } = event;
 
-    if (table === 'annotations' && eventType === 'DELETE') {
+    if (table === 'annotations' && eventType === 'INSERT') {
+      onInsertAnnotation(event);
+    } else if (table === 'annotations' && eventType === 'DELETE') {
       onDeleteAnnotation(event);
     } else if (table === 'bodies' && eventType === 'INSERT') {
       onUpsertBody(event);

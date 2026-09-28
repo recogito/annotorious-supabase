@@ -77,6 +77,7 @@ export const parseAnnotationRecord = (record: AnnotationRecord): SupabaseAnnotat
     target: parseTargetRecord(record.targets[0]),
     bodies,
     visibility: record.is_private && Visibility.PRIVATE,
-    layer_id: record.layer_id
+    layer_id: record.layer_id,
+    motivation: record.motivation || undefined
   };
 }

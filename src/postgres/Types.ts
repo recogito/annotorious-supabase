@@ -10,6 +10,8 @@ export interface AnnotationRecord {
   
   layer_id: string;
 
+  motivation?: string | null;
+
 }
 
 export interface TargetRecord {
@@ -79,7 +81,7 @@ export type AnnotationChangeEvent = {
 
   old: { id: string };
 
-  new: { id: string };
+  new: { id: string, motivation?: string | null };
 
 }
 
