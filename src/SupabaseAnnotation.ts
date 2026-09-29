@@ -10,6 +10,8 @@ export interface SupabaseAnnotation extends Annotation {
 
   visibility?: Visibility;
 
+  motivation?: string;
+
 }
 
 export interface SupabaseAnnotationTarget extends AnnotationTarget {

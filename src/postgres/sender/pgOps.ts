@@ -48,6 +48,7 @@ export const pgOps = (
         id,
         layer_id,
         is_private,
+        motivation,
         targets!inner ( 
           annotation_id,
           created_at,
@@ -124,7 +125,8 @@ export const pgOps = (
         created_at: new Date(),
         created_by: anno.getUser().id,
         layer_id,
-        is_private
+        is_private,
+        motivation: a.motivation
       });
   }
 
