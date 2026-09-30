@@ -10,6 +10,8 @@ import { PostgresConnector } from './postgres';
 import { PresenceConnector } from './presence';
 import type { SupabaseAnnotation } from './SupabaseAnnotation';
 
+const pendingRemovals = new Map<string, Promise<unknown>>();
+
 export interface SupabasePluginInstance {
 
   auth: SupabaseClient['auth'];
@@ -48,6 +50,10 @@ export const SupabasePlugin = (
   // Set up channel and connectors for each channel type
   let channel: RealtimeChannel | null = null;
 
+  let destroyed = false;
+
+  let authSubscription: { unsubscribe: () => void } | null = null;
+
   const sourceId = typeof config.source === 'string' ? config.source : config.source?.uri;
   
   const presence = PresenceConnector(anno, config.appearanceProvider!, emitter, sourceId);
@@ -57,7 +63,13 @@ export const SupabasePlugin = (
   const postgres = PostgresConnector(anno, defaultLayerId, config.layerIds, supabase, presence, emitter, config.source);
 
   // Creates the channel and inits all connectors
-  const init = () => {
+  const init = async () => {
+    // ensure channels are closed 
+    await pendingRemovals.get(config.channel);
+
+    // destroyed while connecting
+    if (destroyed) return;
+
     channel = supabase.channel(config.channel, {
       config: {
         presence: {
@@ -78,8 +90,10 @@ export const SupabasePlugin = (
 
   // Will check if user is logged in, and fail otherwise
   const connect = () => new Promise<User>((resolve, reject) => {
-    if (channel)
+    if (channel) {
       reject('Connection already established');
+      return;
+    }
 
     supabase.auth.getUser().then(({ data }) => {
       if (data?.user) {
@@ -116,9 +130,11 @@ export const SupabasePlugin = (
               // Update Annotorious identity with Supabase identity
               anno.setUser({ id, name, avatar: data.avatar_url });
 
-              init();
-
-              resolve(anno.getUser());
+              // Note: never resolves if the plugin gets destroyed while connecting
+              init().then(() => {
+                if (!destroyed)
+                  resolve(anno.getUser());
+              });
             }
           });
       } else {
@@ -126,7 +142,7 @@ export const SupabasePlugin = (
       }
     });
 
-    supabase.auth.onAuthStateChange((event, session) => {
+    authSubscription = supabase.auth.onAuthStateChange((event, session) => {
       if (!session) return;
 
       if (event === 'USER_UPDATED') {
@@ -140,7 +156,7 @@ export const SupabasePlugin = (
           presence.trackUser(); 
         }
       }
-    });
+    }).data.subscription;
 
     anno.setPresenceProvider?.({ on });
   });
@@ -149,12 +165,30 @@ export const SupabasePlugin = (
     emitter.on(event, callback);
 
   const destroy = () => {
+    destroyed = true;
+
+    authSubscription?.unsubscribe();
+
     presence?.destroy();
     broadcast?.destroy();
     postgres?.destroy();
 
-    if (channel)
-      supabase.removeChannel(channel);
+    if (channel) {
+      const topic = config.channel;
+
+      // record channel removals to allow new connections to wait for it
+      const removal = supabase.removeChannel(channel);
+      pendingRemovals.set(topic, removal);
+
+      const cleanup = () => {
+        if (pendingRemovals.get(topic) === removal)
+          pendingRemovals.delete(topic);
+      }
+
+      removal.then(cleanup, cleanup);
+
+      channel = null;
+    }
   }
 
   return {
