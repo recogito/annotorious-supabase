@@ -30,8 +30,8 @@ export const createReceiver = (
    * After INSERT and UPDATE ANNOTATION:
    * - Store the motivation (if any) until the target arrives.
    * - Note that this could potentially create unnecessary/stale entries
-   *   on annotation UPDATE events. But annotation records rarely 
-   *   update - unless the get unarchived!
+   *   on annotation UPDATE events. But annotation records are rarely 
+   *   updated in practice - unless they get unarchived (undo!)
    */
   const onUpsertAnnotation = (event: AnnotationChangeEvent) => {
     const { id, motivation } = event.new;
