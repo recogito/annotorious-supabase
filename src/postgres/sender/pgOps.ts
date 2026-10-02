@@ -184,10 +184,47 @@ export const pgOps = (
         body: JSON.stringify(payload),
         keepalive: true // important!
       });
-    })
+    });
+
+  const unarchiveAnnotation = (a: Annotation) =>
+    supabase.auth.getSession().then(({ data }) => {
+      if (!data.session) {
+        // Should never happen
+        console.error('[annotorious-supabase] Auth session missing', data);
+        return;
+      }
+
+      const { access_token } = data.session;
+
+      // @ts-ignore
+      const { supabaseUrl, supabaseKey } = supabase;
+
+      console.log('TODO unarchive annotation');
+
+      // TODO - still needs to be built! 
+      // TODO - remove redundancy with archiveAnnotation function!
+      /*
+      const url = `${supabaseUrl}/rest/v1/rpc/unarchive_record_rpc`;
+
+            const payload = {
+        _table_name: 'annotations',
+        _id: a.id
+      };
+
+      return fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Apikey': supabaseKey,
+          'Authorization': `Bearer ${access_token}`
+        },
+        body: JSON.stringify(payload),
+        keepalive: true // important!
+      });
+      */
+    });
 
   const archiveBodies = (bodies: AnnotationBody[]): Promise<void> => {
-
     const archiveOne = (b: AnnotationBody): Promise<void> =>
       new Promise((resolve, reject) => {
         supabase
@@ -274,6 +311,7 @@ export const pgOps = (
     createAnnotation,
     createTarget,
     initialLoad,
+    unarchiveAnnotation,
     updateTarget,
     updateVisibility,
     upsertBodies

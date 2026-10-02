@@ -3,6 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Canvas } from '@allmaps/iiif-parser';
 import type { Annotation, Annotator } from '@annotorious/core';
 import type { Emitter } from 'nanoevents';
+import type { SupabaseAnnotation } from '../SupabaseAnnotation';
 import type { SupabasePluginEvents } from '../SupabasePluginEvents';
 import type { PresenceConnector } from '../presence';
 import { createReceiver } from './receiver';
@@ -31,8 +32,16 @@ export const PostgresConnector = (
     receiver = createReceiver(anno, layerIds, channel, presence, emitter, source);
   }
 
+  const restoreAnnotation = (a: SupabaseAnnotation) => {
+    if (sender)
+      return sender.restoreAnnotation(a);
+    else 
+      return Promise.reject('[annotorious-supabase] PostgresConnector not connected');
+  }
+
   return {
     connect,
+    restoreAnnotation,
     destroy: () => {
       sender?.destroy();
     },
