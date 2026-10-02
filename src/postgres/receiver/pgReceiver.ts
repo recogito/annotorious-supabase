@@ -27,10 +27,13 @@ export const createReceiver = (
   const motivations = new Map<string, string>();
 
   /**
-   * After INSERT ANNOTATION:
+   * After INSERT and UPDATE ANNOTATION:
    * - Store the motivation (if any) until the target arrives.
+   * - Note that this could potentially create unnecessary/stale entries
+   *   on annotation UPDATE events. But annotation records rarely 
+   *   update - unless the get unarchived!
    */
-  const onInsertAnnotation = (event: AnnotationChangeEvent) => {
+  const onUpsertAnnotation = (event: AnnotationChangeEvent) => {
     const { id, motivation } = event.new;
     if (motivation)
       motivations.set(id, motivation);
@@ -67,7 +70,7 @@ export const createReceiver = (
       const existingBody = annotation.bodies.find(b => b.id === id);
 
       if (existingBody) {
-        if (existingBody.version < version) {
+        if ((existingBody.version ?? 0) < version) {
           store.updateBody(existingBody, resolveBodyChange(event, presence.getPresentUsers(), annotation), Origin.REMOTE);
         }
       } else {
@@ -119,7 +122,7 @@ export const createReceiver = (
       if (target.creator?.id === anno.getUser().id) return;
 
       const sourceURI = source ? typeof source === 'string' ? source : source?.uri : undefined;
-      const shouldInsert = !source || target.selector['source'] === sourceURI;
+      const shouldInsert = !source || (target.selector as any)['source'] === sourceURI;
 
       if (shouldInsert) {
         store.addAnnotation({
@@ -145,12 +148,13 @@ export const createReceiver = (
 
     const annotation = store.getAnnotation(annotation_id);
     if (annotation) {
-      if (annotation.target.version < version) {
+      if ((annotation.target.version ?? 0) < version) {
         // console.log('[PGCDC] Overriding target');
         store.updateTarget(resolveTargetChange(event, presence.getPresentUsers(), annotation), Origin.REMOTE);
       }
     } else {
-      // emitter.emit('integrityError', 'Attempt to update target on missing annotation: ' + annotation_id);
+      // Target update for annotation that doesn't exist? Could be an un-archived annotation.
+      onInsertTarget(event);
     }
   }
 
@@ -158,8 +162,8 @@ export const createReceiver = (
     const event = evt as unknown as ChangeEvent;
     const { table, eventType } = event;
 
-    if (table === 'annotations' && eventType === 'INSERT') {
-      onInsertAnnotation(event);
+    if (table === 'annotations' && (eventType === 'INSERT' || eventType === 'UPDATE')) {
+      onUpsertAnnotation(event);
     } else if (table === 'annotations' && eventType === 'DELETE') {
       onDeleteAnnotation(event);
     } else if (table === 'bodies' && eventType === 'INSERT') {
