@@ -21,8 +21,6 @@ export interface SupabasePluginInstance {
   destroy: () => void;
   
   on: <E extends keyof SupabasePluginEvents>(event: E, callback: SupabasePluginEvents[E]) => Unsubscribe;
-
-  restoreAnnotation: (a: SupabaseAnnotation) => Promise<void>;
   
   privacyMode: boolean;
 
@@ -198,7 +196,6 @@ export const SupabasePlugin = (
     connect,
     destroy,
     on,
-    restoreAnnotation: a => postgres.restoreAnnotation(a),
     get privacyMode() {
       if (broadcast.privacyMode !== postgres.privacyMode)
         throw 'Fatal privacy mode integrity error. Should never happen';

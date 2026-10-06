@@ -69,11 +69,6 @@ export const createSender = (
       }
     });
 
-  const restoreAnnotation = (a: SupabaseAnnotation) => ops.unarchiveAnnotation(a)
-    .catch(error => {
-      if (error) emitter.emit('saveError', error);
-    })
-
   const onDeleteAnnotation = (a: Annotation) => ops.archiveAnnotation(a)
     .catch(error => {
       if (error) emitter.emit('saveError', error);
@@ -154,7 +149,6 @@ export const createSender = (
   });
 
   return {
-    restoreAnnotation,
     destroy: () => {
       anno.off('createAnnotation', onCreateAnnotation);
       anno.off('deleteAnnotation', onDeleteAnnotation);
