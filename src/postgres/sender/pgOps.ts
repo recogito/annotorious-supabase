@@ -148,81 +148,74 @@ export const pgOps = (
         layer_id
       });
   }
+
+  // Common code for getting RPC args from the Supabase session 
+  const getRPCCallArgs = () =>
+    supabase.auth.getSession().then(({ data }) => {
+      if (!data.session) {
+        // Should never happen
+        console.error('[annotorious-supabase] Auth session missing', data);
+        return;
+      }
+
+      const { access_token } = data.session;
+
+      // @ts-ignore
+      const { supabaseUrl, supabaseKey } = supabase;
+
+      return { supabaseUrl, supabaseKey, access_token };
+    });
   
   /** 
    * We're calling the 'archive_record_rpc' manually here, so we
    * can set the 'keepalive' flag, and make sure the request gets
    * executed, even if the user closes the browser tab.
    */
-  const archiveAnnotation = (a: Annotation) =>
-    supabase.auth.getSession().then(({ data }) => {
-      if (!data.session) {
-        // Should never happen
-        console.error('[annotorious-supabase] Auth session missing', data);
-        return;
-      }
+  const archiveAnnotation = (a: Annotation) => getRPCCallArgs().then(args => {
+    if (!args ) return;
 
-      const { access_token } = data.session;
+    const { supabaseUrl, supabaseKey, access_token } = args;
+    const url = `${supabaseUrl}/rest/v1/rpc/archive_record_rpc`;
 
-      // @ts-ignore
-      const { supabaseUrl, supabaseKey } = supabase;
+    const payload = {
+      _table_name: 'annotations',
+      _id: a.id
+    };
 
-      const url = `${supabaseUrl}/rest/v1/rpc/archive_record_rpc`;
-
-      const payload = {
-        _table_name: 'annotations',
-        _id: a.id
-      };
-
-      return fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Apikey': supabaseKey,
-          'Authorization': `Bearer ${access_token}`
-        },
-        body: JSON.stringify(payload),
-        keepalive: true // important!
-      });
+    return fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Apikey': supabaseKey,
+        'Authorization': `Bearer ${access_token}`
+      },
+      body: JSON.stringify(payload),
+      keepalive: true // important!
     });
+  });
 
-  const unarchiveAnnotation = (a: Annotation) =>
-    supabase.auth.getSession().then(({ data }) => {
-      if (!data.session) {
-        // Should never happen
-        console.error('[annotorious-supabase] Auth session missing', data);
-        return;
-      }
+  const unarchiveAnnotation = (a: Annotation) => getRPCCallArgs().then(args => {
+    if (!args) return;
 
-      const { access_token } = data.session;
+    const { supabaseUrl, supabaseKey, access_token } = args;
+    const url = `${supabaseUrl}/rest/v1/rpc/restore_annotation_rpc`;
 
-      // @ts-ignore
-      const { supabaseUrl, supabaseKey } = supabase;
+    const payload = {
+      _annotation_id: a.id,
+      _body_ids: a.bodies.map(b => b.id)
+    }
 
-      console.log('TODO unarchive annotation');
-
-      // TODO - still needs to be built! 
-      // TODO - remove redundancy with archiveAnnotation function!
-      /*
-      const url = `${supabaseUrl}/rest/v1/rpc/unarchive_record_rpc`;
-
-            const payload = {
-        _table_name: 'annotations',
-        _id: a.id
-      };
-
-      return fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Apikey': supabaseKey,
-          'Authorization': `Bearer ${access_token}`
-        },
-        body: JSON.stringify(payload),
-        keepalive: true // important!
-      });
-      */
+    return fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Apikey': supabaseKey,
+        'Authorization': `Bearer ${access_token}`
+      },
+      body: JSON.stringify(payload),
+      keepalive: true
     });
+  });
 
   const archiveBodies = (bodies: AnnotationBody[]): Promise<void> => {
     const archiveOne = (b: AnnotationBody): Promise<void> =>
