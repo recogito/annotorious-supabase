@@ -194,7 +194,7 @@ export const pgOps = (
     });
   });
 
-  const unarchiveAnnotation = (a: Annotation) => getRPCCallArgs().then(args => {
+  const restoreAnnotation = (a: Annotation) => getRPCCallArgs().then(args => {
     if (!args) return;
 
     const { supabaseUrl, supabaseKey, access_token } = args;
@@ -304,7 +304,7 @@ export const pgOps = (
     createAnnotation,
     createTarget,
     initialLoad,
-    unarchiveAnnotation,
+    restoreAnnotation,
     updateTarget,
     updateVisibility,
     upsertBodies
