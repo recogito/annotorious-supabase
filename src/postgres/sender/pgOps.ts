@@ -33,7 +33,7 @@ export const pgOps = (
             reject('Too many retries');
           }
         } else if (!(response.data?.length > 0)) {
-          // Row deleted hidden by RLS (archived): retrying won't help
+          // Row deleted or hidden by RLS (archived): retrying won't help
           console.warn('[PG] PG update affected no rows');
           resolve(response);
         } else {
