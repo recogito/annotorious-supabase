@@ -62,16 +62,21 @@ export const createSender = (
   };
 
   // Error scenarios for 'restore annotation' and 'restore body' 
-  const isInsertConflict = (error: { code?: string } | null | undefined) =>
-    error?.code === '23505' || // duplicate key value violates unique constraint
-    error?.code === '42501'    // new row violates row-level security policy 
+  
+  // Re-inserting an archived annotation fails with unique constraint violation
+  const isArchivedAnnotationError = (error: { code?: string } | null | undefined) =>
+    error?.code === '23505';
+
+  // Re-saving an archived body is rejected by RLS
+  const isArchivedBodyError = (error: { code?: string } | null | undefined) =>
+    error?.code === '42501';
 
   const onCreateAnnotation = async (a: SupabaseAnnotation) => {
     try {
       const { error } = await ops.createAnnotation(a, defaultLayerId, privacyMode);
 
       if (error) {
-        if (isInsertConflict(error)) {
+        if (isArchivedAnnotationError(error)) {
           // Assuming an Undo action on a soft-deleted annotation - call restore RPC endpoint instead
           await ops.restoreAnnotation(a);
         } else {
@@ -141,10 +146,15 @@ export const createSender = (
 
         const res = await ops.upsertBodies(toUpsert, a.layer_id as string);
 
-        if (isInsertConflict(res?.error))
+        // Re-saving deleted bodies after undo/redo: restore, then
+        // retry, so other bodies in the batch get saved and real
+        // RLS errors are still reported
+        if (isArchivedBodyError(res?.error)) {
           // Note: this is a plain fetch, whereas all other
           // ops are Supabase SDK requests ('step' now supports both)
-          return await ops.restoreAnnotation(a, toUpsert);
+          await ops.restoreAnnotation(a, toUpsert);
+          return await ops.upsertBodies(toUpsert, a.layer_id as string);
+        }
 
         return res;
       });
