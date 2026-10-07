@@ -46,13 +46,21 @@ export const createSender = (
   const ops = pgOps(anno, supabase, source);
 
   // Queue event actions and make sure they are processed in order
-  let queue: Promise<unknown> = Promise.resolve();
-  const enqueue = <T>(fn: () => Promise<T>) => {
-    const next = queue.then(fn, fn);
-    queue = next.catch(() => {});
+  const queues = new Map<string, Promise<unknown>>;
+
+  const enqueue = <T>(annotationId: string, fn: () => Promise<T>) => {
+    const prev = queues.get(annotationId) ?? Promise.resolve();
+    const next = prev.then(fn);
+    const tail = next.catch(() => {});
+    queues.set(annotationId, tail);
+    
+    // Drop entry once this is the last op in the chain
+    tail.then(() => {
+      if (queues.get(annotationId) === tail) queues.delete(annotationId);
+    });
+
     return next;
   };
-
 
   // That's what Claude said - just needs tweaking if wrong
   const isDuplicateKeyError = (error: { code?: string } | null | undefined) => {
@@ -135,9 +143,9 @@ export const createSender = (
   }
 
   const handlers = {
-    create: (a: SupabaseAnnotation) => enqueue(() => onCreateAnnotation(a)),
-    delete: (a: Annotation) => enqueue(() => onDeleteAnnotation(a)),
-    update: (a: SupabaseAnnotation, prev: SupabaseAnnotation) => enqueue(() => onUpdateAnnotation(a, prev))
+    create: (a: SupabaseAnnotation) => enqueue(a.id, () => onCreateAnnotation(a)),
+    delete: (a: Annotation) => enqueue(a.id, () => onDeleteAnnotation(a)),
+    update: (a: SupabaseAnnotation, prev: SupabaseAnnotation) => enqueue(a.id, () => onUpdateAnnotation(a, prev))
   };
 
   anno.on('createAnnotation', handlers.create);
