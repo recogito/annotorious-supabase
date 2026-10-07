@@ -62,17 +62,16 @@ export const createSender = (
   };
 
   // That's what Claude said - just needs tweaking if wrong
-  const isDuplicateKeyError = (error: { code?: string } | null | undefined) => {
-    console.log('Supabase error', error);
-    return error?.code === '23505';
-  }
+  const isInsertConflict = (error: { code?: string } | null | undefined) =>
+    error?.code === '23505' || // duplicate key value violates unique constraint
+    error?.code === '42501'    // new row violates row-level security policy 
 
   const onCreateAnnotation = async (a: SupabaseAnnotation) => {
     try {
       const { error } = await ops.createAnnotation(a, defaultLayerId, privacyMode);
 
       if (error) {
-        if (isDuplicateKeyError(error)) {
+        if (isInsertConflict(error)) {
           // Assuming an Undo action on a soft-deleted annotation - call restore RPC endpoint instead
           await ops.restoreAnnotation(a);
         } else {
@@ -142,9 +141,9 @@ export const createSender = (
 
         const res = await ops.upsertBodies(toUpsert, a.layer_id as string);
 
-        if (isDuplicateKeyError(res?.error))
+        if (isInsertConflict(res?.error))
           // Note: this is a plain fetch, whereas all other
-          // ops are Supabase SDK requests 
+          // ops are Supabase SDK requests ('step' now supports both)
           return await ops.restoreAnnotation(a, toUpsert);
 
         return res;
