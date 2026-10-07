@@ -61,7 +61,7 @@ export const createSender = (
     return tail;
   };
 
-  // That's what Claude said - just needs tweaking if wrong
+  // Error scenarios for 'restore annotation' and 'restore body' 
   const isInsertConflict = (error: { code?: string } | null | undefined) =>
     error?.code === '23505' || // duplicate key value violates unique constraint
     error?.code === '42501'    // new row violates row-level security policy 
