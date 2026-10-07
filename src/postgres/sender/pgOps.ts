@@ -23,19 +23,23 @@ export const pgOps = (
   // Generic Supabase retry handler
   const withRetry = async (requestFn: () => PostgrestBuilder<Record<string, string>, { [x: string]: any}[], false>, retries: number = 3) => {
     return new Promise<PostgrestSingleResponse<{ [x: string]: any}[]>>((resolve, reject) => {
-      const doRequest = () => requestFn().then(response => {
-        if (response.error || !(response.data?.length > 0)) {
+      const doRequest = () => Promise.resolve(requestFn()).then(response => {
+        if (response.error) {
           if (retries > 0) {
             retries--;
-            console.warn('[PG] Supbase save error - retrying');
+            console.warn('[PG] Supabase save error - retrying');
             setTimeout(doRequest, 250);
           } else {
             reject('Too many retries');
           }
+        } else if (!(response.data?.length > 0)) {
+          // Row deleted or hidden by RLS (archived): retrying won't help
+          console.warn('[PG] PG update affected no rows');
+          resolve(response);
         } else {
           resolve(response);
         } 
-      });
+      }).catch(reject);
 
       doRequest();
     });
@@ -148,46 +152,53 @@ export const pgOps = (
         layer_id
       });
   }
+
+  const callRPC = async (endpoint: string, payload: Record<string, unknown>) => {
+    const { data } = await supabase.auth.getSession();
+    if (!data.session) throw new Error('[annotorious-supabase] Auth session missing');
+
+    // @ts-ignore
+    const { supabaseUrl, supabaseKey } = supabase;
+    const url = `${supabaseUrl}/rest/v1/rpc/${endpoint}`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Apikey': supabaseKey,
+        'Authorization': `Bearer ${data.session.access_token}`
+      },
+      body: JSON.stringify(payload),
+      keepalive: true // important!
+    });
+
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));      
+      throw Object.assign(new Error(body.message ?? `RPC call to ${endpoint} failed with status ${response.status}`), {
+        status: response.status,
+        code: body.code
+      });
+    }
+
+    return response;
+  }
   
   /** 
    * We're calling the 'archive_record_rpc' manually here, so we
    * can set the 'keepalive' flag, and make sure the request gets
    * executed, even if the user closes the browser tab.
    */
-  const archiveAnnotation = (a: Annotation) =>
-    supabase.auth.getSession().then(({ data }) => {
-      if (!data.session) {
-        // Should never happen
-        console.error('[annotorious-supabase] Auth session missing', data);
-        return;
-      }
+  const archiveAnnotation = (a: Annotation) => callRPC('archive_record_rpc', {      
+    _table_name: 'annotations',
+    _id: a.id
+  });
 
-      const { access_token } = data.session;
-
-      // @ts-ignore
-      const { supabaseUrl, supabaseKey } = supabase;
-
-      const url = `${supabaseUrl}/rest/v1/rpc/archive_record_rpc`;
-
-      const payload = {
-        _table_name: 'annotations',
-        _id: a.id
-      };
-
-      return fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Apikey': supabaseKey,
-          'Authorization': `Bearer ${access_token}`
-        },
-        body: JSON.stringify(payload),
-        keepalive: true // important!
-      });
-    })
+  const restoreAnnotation = (a: Annotation, bodies?: AnnotationBody[]) => callRPC('restore_annotation_rpc', {
+    _annotation_id: a.id,
+    _body_ids: (bodies ?? a.bodies ?? []).map(b => b.id)
+  });  
 
   const archiveBodies = (bodies: AnnotationBody[]): Promise<void> => {
-
     const archiveOne = (b: AnnotationBody): Promise<void> =>
       new Promise((resolve, reject) => {
         supabase
@@ -274,6 +285,7 @@ export const pgOps = (
     createAnnotation,
     createTarget,
     initialLoad,
+    restoreAnnotation,
     updateTarget,
     updateVisibility,
     upsertBodies

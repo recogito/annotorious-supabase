@@ -45,37 +45,71 @@ export const createSender = (
 
   const ops = pgOps(anno, supabase, source);
 
-  const onCreateAnnotation = (a: SupabaseAnnotation) => ops.createAnnotation(a, defaultLayerId, privacyMode)
-    .then(({ error }) => {
+  // Queue event actions and make sure they are processed in order
+  const queues = new Map<string, Promise<unknown>>;
+
+  const enqueue = <T>(annotationId: string, fn: () => Promise<T>) => {
+    const prev = queues.get(annotationId) ?? Promise.resolve();
+    const tail = prev
+      .then(fn)
+      .catch(error => emitter.emit('saveError', error))
+      .then(() => {
+        if (queues.get(annotationId) === tail) queues.delete(annotationId);
+      });
+
+    queues.set(annotationId, tail);
+    return tail;
+  };
+
+  // Error scenarios for 'restore annotation' and 'restore body' 
+  
+  // Re-inserting an archived annotation fails with unique constraint violation
+  const isArchivedAnnotationError = (error: { code?: string } | null | undefined) =>
+    error?.code === '23505';
+
+  // Re-saving an archived body is rejected by RLS
+  const isArchivedBodyError = (error: { code?: string } | null | undefined) =>
+    error?.code === '42501';
+
+  const onCreateAnnotation = async (a: SupabaseAnnotation) => {
+    try {
+      const { error } = await ops.createAnnotation(a, defaultLayerId, privacyMode);
+
       if (error) {
-        emitter.emit('saveError', error);
+        if (isArchivedAnnotationError(error)) {
+          // Assuming an Undo action on a soft-deleted annotation - call restore RPC endpoint instead
+          await ops.restoreAnnotation(a);
+        } else {
+          emitter.emit('saveError', error);
+        }
       } else {
-        ops.createTarget(a.target, defaultLayerId).then(response => {
-          if (response.error) {
-            emitter.emit('saveError', response.error);
-          } else {
-            // Annotations don't normally have bodies when they are created through
-            // the interface, but plugins might programmatically create annotatoins
-            // with initial bodies.
-            if ((a.bodies || []).length > 0) {
-              ops.upsertBodies(a.bodies, defaultLayerId).then(response => {
-                if (response.error) {
-                  emitter.emit('saveError', response.error);
-                }
-              })
-            }
+        const targetResponse = await ops.createTarget(a.target, defaultLayerId);
+        if (targetResponse.error) {
+          emitter.emit('saveError', targetResponse.error);
+        } else {
+          // Annotations don't normally have bodies when they are created through
+          // the interface, but plugins might programmatically create annotations
+          // with initial bodies.
+          if ((a.bodies || []).length > 0) {
+            await ops.upsertBodies(a.bodies, defaultLayerId).then(response => {
+              if (response.error) {
+                emitter.emit('saveError', response.error);
+              }
+            })
           }
-        })
+        }
       }
-    });
+    } catch (error) {
+      emitter.emit('saveError', error as any);
+    }
+  }
 
   const onDeleteAnnotation = (a: Annotation) => ops.archiveAnnotation(a)
     .catch(error => {
-      if (error)
-        emitter.emit('saveError', error);
+      if (error) emitter.emit('saveError', error);
     });
 
-  const onUpdateAnnotation = (a: SupabaseAnnotation, previous: SupabaseAnnotation) => {
+  const onUpdateAnnotation = async (a: SupabaseAnnotation, previous: SupabaseAnnotation) => {
     const { 
       oldValue,
       newValue,
@@ -85,46 +119,62 @@ export const createSender = (
       targetUpdated 
     } = diffAnnotations(previous, a);
 
-    // Check if annotation visibility has changed
-    const oldVisibility = oldValue.visibility;
-    const newVisibility = newValue.visibility;
+    // Each step runs on its own, so one failure doesn't skip the others
+    const step = async (fn: () => PromiseLike<any | void>) => {
+      try {
+        const res = await fn();
 
-    if (oldVisibility !== newVisibility) {
-      ops.updateVisibility(newValue).then(({ error }) => {
-        if (error)
-          emitter.emit('saveError', error);
+        if (res instanceof Response) {
+          if (!res.ok) emitter.emit('saveError', { code: res.status, message: res.statusText } as any);
+        } else if (res && 'error' in res && res.error) {
+          emitter.emit('saveError', res.error as any);
+        }
+      } catch (error) {
+        emitter.emit('saveError', error as any);
+      }
+    };
+
+    if (oldValue.visibility !== newValue.visibility)
+      await step(() => ops.updateVisibility(newValue));
+
+    if ((bodiesCreated?.length || 0) + (bodiesUpdated?.length || 0) > 0)
+      await step(async () => {
+        const toUpsert = [
+          ...(bodiesCreated || []), 
+          ...(bodiesUpdated || []).map(u => u.newBody) 
+        ];
+
+        const res = await ops.upsertBodies(toUpsert, a.layer_id as string);
+
+        // Re-saving deleted bodies after undo/redo: restore, then
+        // retry, so other bodies in the batch get saved and real
+        // RLS errors are still reported
+        if (isArchivedBodyError(res?.error)) {
+          // Note: this is a plain fetch, whereas all other
+          // ops are Supabase SDK requests ('step' now supports both)
+          await ops.restoreAnnotation(a, toUpsert);
+          return await ops.upsertBodies(toUpsert, a.layer_id as string);
+        }
+
+        return res;
       });
-    }
 
-    if ((bodiesCreated?.length || 0) + (bodiesUpdated?.length || 0) > 0) {
-      ops.upsertBodies([
-        ...(bodiesCreated || []), 
-        ...(bodiesUpdated || []).map(u => u.newBody) 
-      // @ts-ignore
-      ], a.layer_id).then(({ error }) => {
-        if (error)
-          emitter.emit('saveError', error);
-      });
-    }
+    if (bodiesDeleted && bodiesDeleted.length > 0)
+      await step(() => ops.archiveBodies(bodiesDeleted));
 
-    if (bodiesDeleted?.length > 0) {
-      ops.archiveBodies(bodiesDeleted)
-        .catch(error => {
-          emitter.emit('saveError', error);
-        });
-    }
-
-    if (targetUpdated) {
-      ops.updateTarget(a.target).then(response => {
-        if (response.error)
-          emitter.emit('saveError', response.error);
-      });
-    }
+    if (targetUpdated)
+      await step(() => ops.updateTarget(a.target));
   }
 
-  anno.on('createAnnotation', onCreateAnnotation);
-  anno.on('deleteAnnotation', onDeleteAnnotation);
-  anno.on('updateAnnotation', onUpdateAnnotation);
+  const handlers = {
+    create: (a: SupabaseAnnotation) => enqueue(a.id, () => onCreateAnnotation(a)),
+    delete: (a: Annotation) => enqueue(a.id, () => onDeleteAnnotation(a)),
+    update: (a: SupabaseAnnotation, prev: SupabaseAnnotation) => enqueue(a.id, () => onUpdateAnnotation(a, prev))
+  };
+
+  anno.on('createAnnotation', handlers.create);
+  anno.on('deleteAnnotation', handlers.delete);
+  anno.on('updateAnnotation', handlers.update);
 
   ops.initialLoad(layerIds).then(({ data, error }) => {
     if (error) {
@@ -151,9 +201,9 @@ export const createSender = (
 
   return {
     destroy: () => {
-      anno.off('createAnnotation', onCreateAnnotation);
-      anno.off('deleteAnnotation', onDeleteAnnotation);
-      anno.off('updateAnnotation', onUpdateAnnotation);
+      anno.off('createAnnotation', handlers.create);
+      anno.off('deleteAnnotation', handlers.delete);
+      anno.off('updateAnnotation', handlers.update);
     },
     get privacyMode() {
       return privacyMode;
