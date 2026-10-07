@@ -50,16 +50,15 @@ export const createSender = (
 
   const enqueue = <T>(annotationId: string, fn: () => Promise<T>) => {
     const prev = queues.get(annotationId) ?? Promise.resolve();
-    const next = prev.then(fn);
-    const tail = next.catch(() => {});
-    queues.set(annotationId, tail);
-    
-    // Drop entry once this is the last op in the chain
-    tail.then(() => {
-      if (queues.get(annotationId) === tail) queues.delete(annotationId);
-    });
+    const tail = prev
+      .then(fn)
+      .catch(error => emitter.emit('saveError', error))
+      .then(() => {
+        if (queues.get(annotationId) === tail) queues.delete(annotationId);
+      });
 
-    return next;
+    queues.set(annotationId, tail);
+    return tail;
   };
 
   // That's what Claude said - just needs tweaking if wrong
@@ -117,10 +116,15 @@ export const createSender = (
     } = diffAnnotations(previous, a);
 
     // Each step runs on its own, so one failure doesn't skip the others
-    const step = async (fn: () => PromiseLike<{ error?: unknown } | void>) => {
+    const step = async (fn: () => PromiseLike<any | void>) => {
       try {
         const res = await fn();
-        if (res && res.error) emitter.emit('saveError', res.error as any);
+
+        if (res instanceof Response) {
+          if (!res.ok) emitter.emit('saveError', { code: res.status, message: res.statusText } as any);
+        } else if (res && 'error' in res && res.error) {
+          emitter.emit('saveError', res.error as any);
+        }
       } catch (error) {
         emitter.emit('saveError', error as any);
       }
@@ -130,10 +134,21 @@ export const createSender = (
       await step(() => ops.updateVisibility(newValue));
 
     if ((bodiesCreated?.length || 0) + (bodiesUpdated?.length || 0) > 0)
-      await step(() => ops.upsertBodies([
-        ...(bodiesCreated || []), 
-        ...(bodiesUpdated || []).map(u => u.newBody) 
-      ], a.layer_id as string));
+      await step(async () => {
+        const toUpsert = [
+          ...(bodiesCreated || []), 
+          ...(bodiesUpdated || []).map(u => u.newBody) 
+        ];
+
+        const res = await ops.upsertBodies(toUpsert, a.layer_id as string);
+
+        if (isDuplicateKeyError(res?.error))
+          // Note: this is a plain fetch, whereas all other
+          // ops are Supabase SDK requests 
+          return await ops.restoreAnnotation(a, toUpsert);
+
+        return res;
+      });
 
     if (bodiesDeleted && bodiesDeleted.length > 0)
       await step(() => ops.archiveBodies(bodiesDeleted));

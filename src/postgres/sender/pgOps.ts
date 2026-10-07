@@ -193,9 +193,9 @@ export const pgOps = (
     _id: a.id
   });
 
-  const restoreAnnotation = (a: Annotation) => callRPC('restore_annotation_rpc', {
+  const restoreAnnotation = (a: Annotation, bodies?: AnnotationBody[]) => callRPC('restore_annotation_rpc', {
     _annotation_id: a.id,
-    _body_ids: (a.bodies || []).map(b => b.id)
+    _body_ids: bodies ?? (a.bodies || []).map(b => b.id)
   });  
 
   const archiveBodies = (bodies: AnnotationBody[]): Promise<void> => {
